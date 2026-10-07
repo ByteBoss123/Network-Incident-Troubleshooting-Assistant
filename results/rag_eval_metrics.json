@@ -1,0 +1,37 @@
+{
+  "backend": "deterministic-grounded",
+  "n_items": 97,
+  "by_type": {
+    "block": {
+      "n": 80,
+      "accuracy": 0.85
+    },
+    "host": {
+      "n": 3,
+      "accuracy": 1.0
+    },
+    "host_one": {
+      "n": 6,
+      "accuracy": 1.0
+    },
+    "missing": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "rack": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "template": {
+      "n": 4,
+      "accuracy": 1.0
+    }
+  },
+  "block_precision": 0.9375,
+  "block_recall": 0.75,
+  "overall_accuracy": 0.8763,
+  "citations_total": 732,
+  "ungrounded_citations": 0,
+  "latency_ms_p50": 25.4,
+  "latency_ms_p95": 35.4
+}

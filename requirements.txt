@@ -1,0 +1,17 @@
+duckdb
+pandas
+numpy
+scipy
+scikit-learn
+networkx
+joblib
+langchain
+langchain-core
+langchain-community
+langchain-anthropic
+rank_bm25
+neo4j
+fastapi
+uvicorn
+httpx
+pytest

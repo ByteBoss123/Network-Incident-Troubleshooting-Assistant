@@ -1,0 +1,152 @@
+{
+  "hosts": 203,
+  "co_replica_edges": 13985,
+  "rereplication_transfers": 27,
+  "rereplication_cross_subnet": 6,
+  "receiving_lines_src_eq_dest": 23702,
+  "subnets": 2,
+  "connected_components": 2,
+  "density": 0.6821,
+  "top_hosts_by_weighted_degree": [
+    [
+      "10.251.215.16",
+      281
+    ],
+    [
+      "10.251.66.63",
+      281
+    ],
+    [
+      "10.251.126.83",
+      270
+    ],
+    [
+      "10.250.14.196",
+      266
+    ],
+    [
+      "10.251.193.175",
+      264
+    ]
+  ],
+  "anomaly_hotspot_neighbors": {
+    "host": "10.251.106.10",
+    "degree": 87,
+    "top_peers": [
+      [
+        "10.250.7.96",
+        4,
+        3
+      ],
+      [
+        "10.251.67.4",
+        4,
+        3
+      ],
+      [
+        "10.251.214.130",
+        2,
+        2
+      ],
+      [
+        "10.251.215.16",
+        3,
+        2
+      ],
+      [
+        "10.251.123.33",
+        2,
+        2
+      ]
+    ]
+  },
+  "overall_block_anomaly_rate": 0.0394,
+  "hosts_tested": 203,
+  "hosts_significant_bonferroni": 3,
+  "top_concentration_hosts": [
+    {
+      "ip": "10.251.106.10",
+      "blocks": 62,
+      "anomalous": 55.0,
+      "rate": 0.8871,
+      "p_value": 2.17e-69
+    },
+    {
+      "ip": "10.251.198.33",
+      "blocks": 125,
+      "anomalous": 19.0,
+      "rate": 0.152,
+      "p_value": 5.04e-07
+    },
+    {
+      "ip": "10.251.195.70",
+      "blocks": 131,
+      "anomalous": 16.0,
+      "rate": 0.1221,
+      "p_value": 6.33e-05
+    },
+    {
+      "ip": "10.251.31.160",
+      "blocks": 117,
+      "anomalous": 13.0,
+      "rate": 0.1111,
+      "p_value": 0.000745
+    },
+    {
+      "ip": "10.250.19.16",
+      "blocks": 130,
+      "anomalous": 12.0,
+      "rate": 0.0923,
+      "p_value": 0.00549
+    }
+  ],
+  "expected_neo4j_host_anomaly_rate": [
+    {
+      "ip": "10.251.106.10",
+      "blocks": 62,
+      "anomalous": 55,
+      "rate": 0.8871
+    },
+    {
+      "ip": "10.251.198.33",
+      "blocks": 125,
+      "anomalous": 19,
+      "rate": 0.152
+    },
+    {
+      "ip": "10.251.195.70",
+      "blocks": 131,
+      "anomalous": 16,
+      "rate": 0.1221
+    },
+    {
+      "ip": "10.251.31.160",
+      "blocks": 117,
+      "anomalous": 13,
+      "rate": 0.1111
+    },
+    {
+      "ip": "10.251.75.79",
+      "blocks": 114,
+      "anomalous": 11,
+      "rate": 0.0965
+    }
+  ],
+  "bgl_racks": 64,
+  "bgl_nodes": 1776,
+  "bgl_racks_with_alerts": 42,
+  "bgl_top_alert_racks": [
+    [
+      "R30",
+      61
+    ],
+    [
+      "R01",
+      5
+    ],
+    [
+      "R04",
+      5
+    ]
+  ]
+}

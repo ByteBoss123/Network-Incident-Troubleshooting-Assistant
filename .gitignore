@@ -1,0 +1,6 @@
+data/raw/*.csv
+data/*.duckdb
+models/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
