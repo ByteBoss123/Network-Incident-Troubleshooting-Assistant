@@ -1,0 +1,130 @@
+{
+  "etl": {
+    "eve_events": 5000,
+    "flows": 3512,
+    "alerts": 745,
+    "dns": 680,
+    "anomalies": 3,
+    "alerted_flows": 366,
+    "external_source_ips": 952,
+    "alert_source_ips": 347,
+    "distinct_signatures": 122,
+    "window_start_utc": "2021-06-06 13:57:39.105835+00:00",
+    "window_end_utc": "2021-06-07 13:56:04.947028+00:00",
+    "dup_flow_ids": 0
+  },
+  "graph": {
+    "flow_edges": 2345,
+    "alert_edges": 380,
+    "expected_top_signatures": [
+      {
+        "sid": 2010935,
+        "signature": "ET SCAN Suspicious inbound to MSSQL port 1433",
+        "sources": 56,
+        "hits": 131
+      },
+      {
+        "sid": 2403385,
+        "signature": "ET CINS Active Threat Intelligence Poor Reputation IP group 86",
+        "sources": 28,
+        "hits": 79
+      },
+      {
+        "sid": 2403335,
+        "signature": "ET CINS Active Threat Intelligence Poor Reputation IP group 36",
+        "sources": 5,
+        "hits": 64
+      },
+      {
+        "sid": 2403386,
+        "signature": "ET CINS Active Threat Intelligence Poor Reputation IP group 87",
+        "sources": 22,
+        "hits": 57
+      },
+      {
+        "sid": 2403389,
+        "signature": "ET CINS Active Threat Intelligence Poor Reputation IP group 90",
+        "sources": 9,
+        "hits": 33
+      }
+    ],
+    "top_fanout_sources": [
+      {
+        "src_ip": "193.46.255.92",
+        "ports": 482,
+        "dests": 1,
+        "flows": 536
+      },
+      {
+        "src_ip": "45.143.203.2",
+        "ports": 51,
+        "dests": 1,
+        "flows": 51
+      },
+      {
+        "src_ip": "45.143.200.102",
+        "ports": 46,
+        "dests": 1,
+        "flows": 46
+      },
+      {
+        "src_ip": "45.143.200.10",
+        "ports": 37,
+        "dests": 1,
+        "flows": 37
+      },
+      {
+        "src_ip": "185.193.88.29",
+        "ports": 20,
+        "dests": 1,
+        "flows": 20
+      }
+    ]
+  },
+  "time_series": {
+    "hours": 25,
+    "alerts_per_hour_median": 30.0,
+    "burst_hours": 0,
+    "bursts": []
+  },
+  "alert_triage": {
+    "n_flows": 2324,
+    "n_train": 1626,
+    "n_test": 698,
+    "train_alert_rate": 0.1531,
+    "test_alert_rate": 0.1676,
+    "models": {
+      "rule_sensitive_port": {
+        "precision": 0.1229,
+        "recall": 0.188,
+        "f1": 0.1486,
+        "roc_auc": 0.3905,
+        "pr_auc": 0.1554
+      },
+      "logistic_regression": {
+        "precision": 0.223,
+        "recall": 0.7949,
+        "f1": 0.3483,
+        "roc_auc": 0.6512,
+        "pr_auc": 0.2329
+      },
+      "gradient_boosting": {
+        "precision": 0.2943,
+        "recall": 0.7521,
+        "f1": 0.4231,
+        "roc_auc": 0.777,
+        "pr_auc": 0.4298,
+        "threshold_from_validation": 0.05
+      }
+    },
+    "test_alerted_reputation_only_share": 0.8803,
+    "recall_on_reputation_alerts": 0.7573,
+    "recall_on_behavioural_alerts": 0.7143,
+    "test_missed_alerted_flows": 29,
+    "missed_by_category": {
+      "Misc Attack": 25,
+      "Attempted Information Leak": 3,
+      "Potentially Bad Traffic": 1
+    }
+  }
+}

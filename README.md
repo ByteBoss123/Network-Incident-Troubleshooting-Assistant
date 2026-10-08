@@ -1,67 +1,67 @@
 # Network Incident Troubleshooting Assistant
 
-Log anomaly detection, a telemetry-derived topology graph, and a LangChain retrieval assistant for incident triage, built on real distributed-system logs.
+Log anomaly detection, a telemetry-derived topology graph, IDS security telemetry, and a LangChain retrieval assistant for incident triage, evaluated with real LLMs on Amazon Bedrock. Everything runs on real, public data.
 
-## Data (all real, public)
+## Data
 
 | Source | What | Size |
 |---|---|---|
-| Loghub HDFS v1 (logpai/loglizer mirror) | Hadoop DataNode/NameNode logs, 26-minute excerpt (2008-11-09 20:35–21:01), parsed into 19 event templates | 104,815 lines, 7,940 blocks, 203 hosts |
-| HDFS v1 `anomaly_label.csv` | Expert block-level labels from the full 11M-line run | 313 anomalous blocks in the excerpt (3.94%) |
-| Loghub BGL (Blue Gene/L supercomputer) | RAS log sample with alert labels; node ids parsed into rack / midplane / node hierarchy | 2,000 lines, 143 alert lines, 64 racks, 1,777 nodes |
+| Loghub HDFS v1 (logpai/loglizer mirror) | Hadoop DataNode/NameNode logs, 26-minute excerpt, 19 parsed event templates | 104,815 lines, 7,940 blocks, 203 hosts |
+| HDFS v1 `anomaly_label.csv` | Expert block-level labels from the full run | 313 anomalous blocks (3.94%) |
+| Loghub BGL (Blue Gene/L) | RAS log sample with alert labels; node ids parsed into rack → midplane → node | 2,000 lines, 143 alerts, 64 racks |
+| Stratosphere Lab Suricata capture (StratosphereLinuxIPS repo) | Real IDS sensor output (EVE JSON), 24 h, 2021-06-06/07: NetFlow-style flow records, signature alerts, DNS | 5,000 events: 3,512 flows, 745 alerts, 122 signatures, 1,057 external IPs |
 
-SHA-256 checksums of the downloaded files are in `data/raw/SHA256SUMS`.
+`data/download.sh` fetches everything and verifies SHA-256 checksums.
 
-## Pipeline
+## Pipeline (`./run_all.sh`, then `pytest tests` — 13 tests)
 
-1. **ETL** (`src/etl.py`): Python + DuckDB SQL. Builds tables for events, labelled block sessions, block-by-template counts, replica placement and the BGL hierarchy. Checks: 0 duplicate block ids, 0 event lines without a labelled block.
-2. **Anomaly detection** (`src/detect.py`): block-level event-count vectors with a **chronological** 70/30 split (5,558 train / 2,382 test blocks, 121 test anomalies).
-3. **Topology graph** (`src/graph.py`, `src/neo4j_load.py`):
-   - Host–host co-replica edges (13,985), re-replication transfers (27), and subnets.
-   - Block→host `STORED_ON` / `RECEIVED_BY` edges, and the BGL Rack→Midplane→Node hierarchy.
-   - Exported as CSV with a Neo4j loader plus Cypher queries (hotspot hosts, blast radius, rack alerts, shortest path). The same analysis is reproduced in DuckDB/NetworkX.
-4. **Graph feature** (`src/graph_feature.py`): a leakage-free replica-host risk score. Host anomaly rates come from train-split blocks only, and the threshold is chosen on train.
-5. **Assistant** (`src/rag.py`, `src/api.py`):
-   - Built as a LangChain LCEL chain: question routing, then structured context (block log sequence, detector scores, host risk, rack alerts), then BM25 retrieval over a train-only knowledge base (template cards, past labelled incidents, host and alert cards), then the prompt, then the LLM.
-   - FastAPI endpoints: `/ask`, `/block/{id}`, `/health`.
-6. **Evaluation** (`src/evaluate.py`): a 97-item golden set built from held-out blocks and analytic ground truth.
-
-Run everything with `./run_all.sh`, then `pytest tests` (9 tests).
+1. **ETL** (`src/etl.py`, `src/security.py`): Python + DuckDB SQL into event, block-session, block×template, replica, BGL hierarchy, and `sec_flows` / `sec_alerts` / `sec_dns` tables. Checks: 0 duplicate block ids, 0 unlabeled event lines, 0 duplicate flow ids.
+2. **Log anomaly detection** (`src/detect.py`): block event-count vectors, chronological 70/30 split.
+3. **Topology graph** (`src/graph.py`, `src/neo4j_load.py`): host–host co-replica edges (13,985), re-replication transfers, subnets, Block→Host edges, BGL Rack→Midplane→Node, and the security graph (IP –FLOW{port}→ IP, IP –TRIGGERED→ Signature). Exported as CSV with a Neo4j loader, Cypher queries (hotspot hosts, blast radius, top scanners, top signatures, rack alerts, shortest path), and a parity checker (`src/neo4j_check.py`) against the DuckDB/NetworkX results.
+4. **Graph feature** (`src/graph_feature.py`): leakage-free replica-host risk (host failure rates from train blocks only; threshold chosen on train).
+5. **Security analytics** (`src/security.py`): hourly alert series with a robust z-score burst detector, scanner fan-out, and an alert-triage model that predicts which inbound flows trip a Suricata signature from flow metadata only (ports, protocol, packets, bytes, duration, state; no IPs or reputation lists), chronological split.
+6. **Assistant** (`src/rag.py`, `src/api.py`): LangChain LCEL chain. It routes the question, builds structured context (block log sequence with the detector's verdict, host risk, rack alerts, IDS view of a source IP, top scanners), BM25-retrieves from a train-only knowledge base (template cards, past labelled incidents, host cards, IDS signature cards, BGL alert cards), then generates with an LLM or a deterministic grounded generator. FastAPI: `/ask`, `/block/{id}`, `/health`.
+7. **Evaluation** (`src/evaluate.py`, `src/llm_eval.py`): 114-item golden set from held-out data and analytic ground truth (80 block verdicts, host, rack, template, signature, source-IP, scanner and missing-id questions). LLM answers are checked for correctness and for hallucinated ids: any block id, IP, event id, rack or signature id not present in the exact prompt sent.
+8. **Dashboard** (`dashboard/`): React console built from the results (`python dashboard/build_data.py && python dashboard/build.py`), with an in-page block / source-IP triage lookup.
 
 ## Results (from `results/*.json`)
 
-**Detection on held-out (later) blocks, 121 anomalies of 2,382:**
+**Log anomaly detection, 2,382 later blocks, 121 anomalies:**
 
 | Model | Precision | Recall | F1 | ROC-AUC | PR-AUC |
 |---|---|---|---|---|---|
-| Rule: any exception template | 1.000 | 0.298 | 0.459 | 0.649 | 0.333 |
+| Exception-template rule | 1.000 | 0.298 | 0.459 | 0.649 | 0.333 |
 | Isolation Forest | 0.979 | 0.380 | 0.548 | 0.770 | 0.487 |
 | Logistic regression (supervised) | 0.979 | 0.388 | 0.556 | 0.612 | 0.416 |
-| **PCA residual (unsupervised)** | **0.962** | **0.628** | **0.760** | **0.816** | **0.608** |
+| PCA residual (unsupervised) | 0.962 | 0.628 | 0.760 | 0.816 | 0.608 |
 | **PCA + replica-host risk (graph)** | **0.957** | **0.727** | **0.826** | – | – |
 
-- **Recall ceiling.** 44 of the 121 test anomalies (36.4%) have exactly the same event-count vector as the most common healthy block, which accounts for 81.25% of normal blocks. Any detector using log-count features alone therefore tops out at 63.6% recall without flagging that healthy majority. PCA reaches 62.8%.
-- **Topology helps.** Adding the topology signal rescues 12 of those anomalies at the cost of 1 extra false alarm, lifting recall to 72.7%. The gain comes from a single host, `10.251.106.10`, with 55 of its 62 blocks anomalous (binomial p = 2.2e-69, Bonferroni-significant). None of its own log lines show an exception, so the root cause is not visible in this excerpt.
-- **Supervised underperforms.** The supervised model did worse than unsupervised PCA. That is reported as-is, not tuned away.
+- 44 of 121 test anomalies (36.4%) have exactly the most common healthy event-count vector, so count features alone cap recall at 63.6%. The topology signal rescued 12 of them for 1 extra false alarm. The gain comes from one host, `10.251.106.10` (55/62 blocks failed, binomial p = 2.2e-69).
+- 3 of 203 hosts are Bonferroni-significant hotspots. BGL rack R30 has 61 of 143 alert lines.
 
-**Hotspots:** 3 of 203 hosts have Bonferroni-significant anomaly concentration. On BGL, rack R30 accounts for 61 of the 143 alert lines.
+**Security telemetry (Suricata, 24 h):**
+- Widest scanner `193.46.255.92` probed 482 distinct ports in 536 flows. The top signature, MSSQL port 1433 inbound scan, fired 131 times from 56 sources.
+- Alert triage from flow metadata (698 later inbound flows, 16.8% alerted): gradient boosting PR-AUC 0.430 (2.6x the base rate), ROC-AUC 0.777, recall 0.752 at precision 0.294. Logistic regression reached PR-AUC 0.233; a sensitive-port rule scored below chance (ROC-AUC 0.391).
+- 88.0% of alerted test flows carry a reputation-list signature, which flow features cannot see directly; the model still recalled 75.7% of them versus 71.4% of behavioural alerts.
+- No hourly burst crossed the robust z > 3.5 threshold (median 30 alerts/hour).
 
-**Assistant golden set:**
-- 97 items in total; 87.6% overall task accuracy.
-- Block verdicts: 85.0% accuracy (80 items), with precision 0.938 and recall 0.750.
-- Host, rack, template and missing-block questions all answered correctly. These sets are small (2–6 items each).
-- 0 ungrounded citations out of 732.
-- Latency: p50 25 ms, p95 35 ms in-process.
+**Assistant evaluation:**
+
+| Generator | Set | Items | Accuracy | Block P / R | Hallucinated ids | Content-filtered | p50 latency |
+|---|---|---|---|---|---|---|---|
+| Deterministic grounded (no LLM) | full | 114 | 89.5% | 0.94 / 0.75 | 0 of 769 cited | – | 19 ms |
+| Llama 3.3 70B (Bedrock) | 50-item stratified subset | 50 | 96.0% | 1.00 / 0.88 | 0 of 200 | 0 | 3.3 s |
+| Amazon Nova Pro (Bedrock) | 50-item stratified subset | 50 | 82.0% | 1.00 / 0.88 | 0 of 134 | 6 | 3.6 s |
+
+- Both LLMs followed the detector's verdict and cited only ids present in their prompt.
+- Nova Pro's content filter refused 6 security questions ("Is <IP> malicious?"), counted as misses; its other 3 misses list only the top hotspot host when 3 qualify (2) or follow a detector miss (1).
+- Llama's 2 misses: a block the detector itself missed (the model correctly reported the detector's "normal"), and a template question it said the context did not cover.
 
 ## Limitations, disclosed
 
-- **LLM backend not executed.** The Claude backend (`langchain-anthropic`, enabled by `ANTHROPIC_API_KEY`) is wired in but was not run, because no API key was available in the build sandbox. The reported eval uses the deterministic grounded generator, so its 0-ungrounded-citations result holds by construction. The grounding check is there to score the LLM backend once it runs.
-- **Neo4j not executed.** The loader and Cypher queries were not run, because Neo4j could not be installed in the sandbox (Docker Hub and Neo4j downloads were blocked). `results/graph_metrics.json` holds the expected output for a parity check.
-- **Changes after the first eval run.** The first eval scored 82.5% overall (`results/rag_eval_metrics_v1.json`). Two items were then fixed:
-  - Templates first seen in the test window were missing from the knowledge base, so it now holds the full parsed template catalog, with outcome rates still drawn from train only.
-  - A scorer bug counted blast-radius peers as hotspot hosts.
-
-  A tokenizer with lowercase and suffix stemming was also added at the same time.
-- **Threshold choice.** The PCA and Isolation Forest thresholds are the train 96th percentile, a value picked from the roughly 4% anomaly base rate.
-- **Excerpt only.** Results cover a 26-minute excerpt, not the full HDFS run. Block labels come from the full run, so some "anomalous" blocks may fail outside this window.
-- **Dataset quirk.** In this release every `Receiving block ... src: dest:` line has src equal to dest. Host-to-host edges therefore come from co-replica placement and re-replication lines rather than those transfer lines.
+- **LLM subset.** The Bedrock run used a seeded, stratified 50-item subset (all 34 non-block items + 8 anomalous + 8 normal blocks) because prompts had to be embedded in the Bedrock call script. The exact prompts sent are frozen in `results/llm_prompts_bedrock.jsonl`; prompt lengths were checked against the local copies (0 mismatches).
+- **Claude on Bedrock not run.** Anthropic models on the account return "use case details have not been submitted", so the eval used Llama 3.3 70B and Nova Pro. The `langchain-anthropic` backend is wired in but unexecuted.
+- **Scorer changes after audit.** After reading the LLM answers, two scorer fixes were made: host-list answers are scored on all IPs cited, not just the first line, and the id-grounding check counts the system prompt's own "E7" example as allowed. The first deterministic eval (82.5%, `results/rag_eval_metrics_v1.json`) was also followed by a template-catalog fix and a tokenizer change.
+- **Neo4j not executed here.** Docker Hub and Neo4j downloads are blocked in the build sandbox. `./scripts/neo4j_run.sh local` (Docker) or with AuraDB credentials loads the graph and runs the parity check. Every loader field was verified against its CSV.
+- **Data scope.** HDFS results cover a 26-minute excerpt with labels from the full run; the Suricata capture is one sensor over 24 hours; BGL is a 2,000-line sample. The deterministic generator's grounding result holds by construction.
+- **Dataset quirk.** HDFS `Receiving block … src: dest:` lines always have src = dest, so host edges come from co-replica placement and re-replication lines.

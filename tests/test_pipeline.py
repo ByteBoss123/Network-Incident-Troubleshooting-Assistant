@@ -81,3 +81,35 @@ def test_api():
     r = c.post("/ask", json={"question": "Which rack has the most BGL alerts?"}).json()
     assert "[R30]" in r["answer"]
     assert c.get("/block/blk_42").status_code == 404
+
+
+def test_security_etl_counts(con):
+    flows, alerted, alerts = con.execute(
+        "SELECT (SELECT COUNT(*) FROM sec_flows), (SELECT SUM(alerted::INT) FROM sec_flows), "
+        "(SELECT COUNT(*) FROM sec_alerts)").fetchone()
+    assert (flows, alerted, alerts) == (3512, 366, 745)
+
+
+def test_security_split_chronological_and_no_ip_features():
+    import security
+    m = json.loads((RES / "security_metrics.json").read_text())["alert_triage"]
+    assert m["n_train"] + m["n_test"] == m["n_flows"]
+    cols = security.features(pd.DataFrame({
+        "dest_port": [1], "src_port": [2], "proto": ["TCP"], "pkts_toserver": [1], "pkts_toclient": [0],
+        "bytes_toserver": [1], "bytes_toclient": [0], "start": pd.to_datetime(["2021-01-01"]),
+        "end": pd.to_datetime(["2021-01-01"]), "state": ["new"], "app_proto": [None]})).columns
+    assert not any("ip" in c for c in cols)
+
+
+def test_source_question_routes_to_ids():
+    out = rag.ask("Is 193.46.255.92 malicious?")
+    assert out["answer"].startswith("Verdict: source [193.46.255.92] was FLAGGED")
+
+
+def test_bedrock_llm_answers_rescore_reproducibly():
+    import llm_eval
+    for tag, path in [("nova_pro", "llm_answers_nova-pro.jsonl"), ("llama3_70b", "llm_answers_llama3.jsonl")]:
+        saved = json.loads((RES / f"rag_eval_metrics_{tag}.json").read_text())
+        again = llm_eval.score(RES / path, tag=tag, prompts_path=RES / "llm_prompts_bedrock.jsonl")
+        assert again["overall_accuracy"] == saved["overall_accuracy"]
+        assert again["hallucinated_ids"] == 0

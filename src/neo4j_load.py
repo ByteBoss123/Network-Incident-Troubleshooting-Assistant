@@ -26,6 +26,8 @@ SCHEMA = [
     "CREATE CONSTRAINT subnet_cidr IF NOT EXISTS FOR (s:Subnet) REQUIRE s.cidr IS UNIQUE",
     "CREATE CONSTRAINT bgl_node IF NOT EXISTS FOR (n:ComputeNode) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT rack_id IF NOT EXISTS FOR (r:Rack) REQUIRE r.id IS UNIQUE",
+    "CREATE CONSTRAINT ip_addr IF NOT EXISTS FOR (i:IP) REQUIRE i.addr IS UNIQUE",
+    "CREATE CONSTRAINT sig_id IF NOT EXISTS FOR (s:Signature) REQUIRE s.sid IS UNIQUE",
 ]
 
 LOADS = {
@@ -45,6 +47,14 @@ LOADS = {
     "rereplication": """UNWIND $rows AS r
         MATCH (a:Host {ip: r.src_ip}) MATCH (b:Host {ip: r.dst_ip})
         MERGE (a)-[:REREPLICATED {block: r.block_id}]->(b)""",
+    "sec_flow_edges": """UNWIND $rows AS r
+        MERGE (a:IP {addr: r.src_ip}) MERGE (b:IP {addr: r.dest_ip})
+        MERGE (a)-[e:FLOW {port: r.dest_port, proto: r.proto}]->(b)
+        SET e.flows = r.flows, e.alerted_flows = r.alerted_flows, e.pkts = r.pkts, e.bytes = r.bytes""",
+    "sec_alert_edges": """UNWIND $rows AS r
+        MERGE (a:IP {addr: r.src_ip})
+        MERGE (s:Signature {sid: r.signature_id}) SET s.name = r.signature, s.category = r.category
+        MERGE (a)-[t:TRIGGERED]->(s) SET t.hits = r.hits""",
     "bgl_nodes": """UNWIND $rows AS r
         MERGE (k:Rack {id: r.rack})
         MERGE (m:Midplane {id: r.rack + '-' + r.midplane}) MERGE (k)-[:HAS_MIDPLANE]->(m)
@@ -74,6 +84,16 @@ QUERIES = {
     "rack_alerts": """
         MATCH (k:Rack)-[:HAS_MIDPLANE]->()-[:HAS_NODE]->(n:ComputeNode)
         RETURN k.id AS rack, sum(n.alerts) AS alerts ORDER BY alerts DESC LIMIT 3""",
+    # vertical port scans: sources hitting the most distinct ports
+    "top_scanners": """
+        MATCH (a:IP)-[e:FLOW]->(:IP)
+        RETURN a.addr AS src, count(DISTINCT e.port) AS ports, sum(e.flows) AS flows
+        ORDER BY ports DESC, flows DESC LIMIT 5""",
+    # signatures shared by the most sources (campaign-style activity)
+    "top_signatures": """
+        MATCH (a:IP)-[t:TRIGGERED]->(s:Signature)
+        RETURN s.sid AS sid, s.name AS signature, count(a) AS sources, sum(t.hits) AS hits
+        ORDER BY hits DESC LIMIT 5""",
     "shortest_rereplication_path": """
         MATCH (a:Host)-[:REREPLICATED]->(b:Host) WITH a, b LIMIT 1
         MATCH p = shortestPath((a)-[:CO_REPLICA*..4]-(b))

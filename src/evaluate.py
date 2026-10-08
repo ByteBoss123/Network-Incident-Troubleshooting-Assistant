@@ -52,7 +52,30 @@ def golden():
     items += [{"type": "template", "q": q, "truth": e} for e, q in TEMPLATES.items()]
     items += [{"type": "missing", "q": f"Why did block {b} fail?", "truth": "not found"}
               for b in ["blk_1234567890123", "blk_-999999999999"]]
+    items += security_items()
     rnd.shuffle(items)
+    return items
+
+
+SIGNATURES = {"2010935": "What does the MSSQL port 1433 inbound scan signature mean?",
+              "2001219": "Explain the potential SSH scan alert",
+              "2017515": "What is the python-requests user-agent alert?"}
+
+
+def security_items():
+    """Suricata questions: per-source IDS verdicts, widest scanner, signature lookups."""
+    rnd = random.Random(SEED + 1)
+    con = rag._con()
+    alerted = [r[0] for r in con.execute("SELECT DISTINCT src_ip FROM sec_alerts ORDER BY 1").fetchall()]
+    clean = [r[0] for r in con.execute("""SELECT DISTINCT src_ip FROM sec_flows WHERE external_src
+              AND src_ip NOT IN (SELECT src_ip FROM sec_alerts) ORDER BY 1""").fetchall()]
+    items = [{"type": "source", "q": f"Is {ip} malicious?", "truth": True} for ip in rnd.sample(alerted, 6)]
+    items += [{"type": "source", "q": f"Should I worry about traffic from {ip}?", "truth": False}
+              for ip in rnd.sample(clean, 6)]
+    top = json.loads((RES / "security_metrics.json").read_text())["graph"]["top_fanout_sources"][0]["src_ip"]
+    items += [{"type": "scanner", "q": q, "truth": top} for q in
+              ["Which source IPs are scanning us?", "Who are the top attackers probing our ports?"]]
+    items += [{"type": "signature", "q": q, "truth": sid} for sid, q in SIGNATURES.items()]
     return items
 
 
@@ -79,6 +102,12 @@ def score(item, out):
         return f"[{item['truth']}]" in ans.split("\n")[0], None
     if item["type"] == "template":
         return f"template:{item['truth']}" in out["retrieved"], None
+    if item["type"] == "source":
+        return ("FLAGGED" in ans.split("\n")[0]) == item["truth"], None
+    if item["type"] == "scanner":
+        return f"[{item['truth']}]" in ans.split("\n")[0], None
+    if item["type"] == "signature":
+        return f"signature:{item['truth']}" in out["retrieved"], None
     if item["type"] == "missing":
         return "does not appear" in ans or "not contain" in ans, None
 

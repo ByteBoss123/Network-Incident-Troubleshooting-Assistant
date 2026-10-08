@@ -1,0 +1,229 @@
+<title>Incident Triage Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: operations console. Summary strip, then a lookup tool, then evidence panels in a 2-col grid that stacks on phones. */
+:root {
+  --bg: #f3f5f6; --panel: #ffffff; --ink: #14212b; --muted: #5b6b77; --line: #d9e0e4;
+  --accent: #0e6e7a; --accent-soft: #d8eef0;
+  --ok: #2f7d4f; --warn: #b26b00; --bad: #b3261e; --bad-soft: #f7e1df; --ok-soft: #e0f0e6; --warn-soft: #fbedd5;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Source Sans 3", "Segoe UI", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f171c; --panel: #16222a; --ink: #e3ecf0; --muted: #91a3ae; --line: #26363f;
+  --accent: #4fc3cf; --accent-soft: #143a40;
+  --ok: #6cc58d; --warn: #e5a54b; --bad: #f08a80; --bad-soft: #3a1f1d; --ok-soft: #173326; --warn-soft: #3a2c14;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f171c; --panel: #16222a; --ink: #e3ecf0; --muted: #91a3ae; --line: #26363f;
+  --accent: #4fc3cf; --accent-soft: #143a40;
+  --ok: #6cc58d; --warn: #e5a54b; --bad: #f08a80; --bad-soft: #3a1f1d; --ok-soft: #173326; --warn-soft: #3a2c14;
+  color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); padding-inline: 16px; padding-block: 20px 40px }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 18px }
+h1, h2 { font-family: var(--f-display); margin: 0; text-wrap: balance }
+h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.01em }
+h2 { font-size: 1.02rem; font-weight: 700 }
+.sub { color: var(--muted); margin: 4px 0 0; max-width: 68ch }
+.mono, td.num, .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+.label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600 }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font: 500 .75rem var(--f-mono); padding: 3px 8px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); background: var(--panel) }
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden }
+.stat { background: var(--panel); padding: 12px 14px; display: grid; gap: 2px }
+.stat b { font: 700 1.5rem var(--f-display); font-variant-numeric: tabular-nums }
+.stat span:last-child { color: var(--muted); font-size: .85rem }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 12px; min-width: 0 }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 18px }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap }
+.tabs button { font: 600 .85rem var(--f-body); padding: 6px 12px; border-radius: 4px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer }
+.tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--ink); border-color: var(--accent) }
+.lookup { display: flex; gap: 8px; flex-wrap: wrap }
+.lookup input { flex: 1 1 260px; min-width: 0; font: 500 .9rem var(--f-mono); padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink) }
+.lookup select { font: .85rem var(--f-body); padding: 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); max-width: 100% }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.verdict { display: grid; gap: 8px; border-left: 4px solid var(--muted); padding: 10px 12px; background: var(--bg); border-radius: 0 4px 4px 0 }
+.verdict.bad { border-color: var(--bad); background: var(--bad-soft) }
+.verdict.ok { border-color: var(--ok); background: var(--ok-soft) }
+.verdict.warn { border-color: var(--warn); background: var(--warn-soft) }
+.verdict h3 { margin: 0; font: 700 1.05rem var(--f-display) }
+.verdict ul { margin: 0; padding-left: 18px; display: grid; gap: 2px }
+.pill { display: inline-block; font: 600 .7rem var(--f-mono); padding: 1px 6px; border-radius: 3px; border: 1px solid currentColor }
+.pill.bad { color: var(--bad) } .pill.ok { color: var(--ok) } .pill.warn { color: var(--warn) }
+.scroll { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: .88rem }
+th { text-align: left; font: 600 .7rem var(--f-body); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line) }
+td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: middle }
+td.num, th.num { text-align: right }
+.bar { height: 8px; background: var(--line); border-radius: 2px; min-width: 60px }
+.bar i { display: block; height: 100%; border-radius: 2px; background: var(--accent) }
+.bar i.hi { background: var(--bad) }
+.note { color: var(--muted); font-size: .84rem; margin: 0; max-width: 75ch }
+svg text { fill: var(--muted); font: 11px var(--f-mono) }
+footer { color: var(--muted); font-size: .8rem }
+</style>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script id="data" type="application/json">/*DATA*/</script>
+<script>
+const D = JSON.parse(document.getElementById("data").textContent);
+const h = React.createElement, { useState, useMemo } = React;
+const pct = (x, d = 1) => (x * 100).toFixed(d) + "%";
+const EXC = ["E7", "E10", "E14", "E27", "E8", "E13"];
+
+function Stat({ label, value, note }) {
+  return h("div", { className: "stat" }, h("span", { className: "label" }, label), h("b", null, value), h("span", null, note));
+}
+
+function BlockResult({ id }) {
+  const b = D.blocks[id.trim()];
+  if (!b) return h("div", { className: "verdict warn" }, h("h3", null, "Block not in the test window"),
+    h("p", { className: "note" }, "Lookups cover the 2,382 held-out HDFS blocks. Pick one from the example list."));
+  const [y, v, res, risk, seq] = b;
+  const evs = seq.split(" ").map(t => t.split("x"));
+  const exc = evs.filter(([e]) => EXC.includes(e)).map(([e]) => e);
+  const reasons = [];
+  if (exc.length) reasons.push("Exception templates fired: " + exc.join(", "));
+  if (res > 0) reasons.push("PCA residual " + res + " (flagged if above the training 96th percentile)");
+  if (risk >= D.test.threshold) reasons.push("Stored on a hotspot host: replica-host risk " + pct(risk) + " vs " + pct(D.test.threshold, 0) + " threshold");
+  return h("div", { className: "verdict " + (v ? "bad" : "ok") },
+    h("h3", null, v ? "Flagged as anomalous" : "Looks normal"),
+    h("ul", null,
+      h("li", null, "Event sequence: ", h("span", { className: "mono" }, seq)),
+      reasons.length ? reasons.map((r, i) => h("li", { key: i }, r)) : h("li", null, "No exception templates, PCA residual 0, replica-host risk " + pct(risk)),
+      h("li", null, "Ground-truth label: ", h("span", { className: "pill " + (y ? "bad" : "ok") }, y ? "ANOMALY" : "NORMAL"),
+        v === y ? " (detector correct)" : " (detector " + (v ? "false alarm" : "miss") + ")")));
+}
+
+function SourceResult({ ip }) {
+  const s = D.sources[ip.trim()];
+  if (!s) return h("div", { className: "verdict warn" }, h("h3", null, "Source not seen by the sensor"),
+    h("p", { className: "note" }, "Lookups cover the 1,057 external IPs in the 24-hour Suricata capture."));
+  const [flows, ports, alerted, alerts, sig] = s;
+  const bad = alerts > 0 || alerted > 0;
+  return h("div", { className: "verdict " + (bad ? "bad" : "ok") },
+    h("h3", null, bad ? "Flagged by the IDS" : "No IDS alerts"),
+    h("ul", null,
+      h("li", null, flows + " flows to " + ports + " distinct ports, " + alerted + " alerted"),
+      h("li", null, alerts + " alerts" + (sig ? "; most frequent signature: " : "")), sig ? h("li", null, h("span", { className: "mono" }, sig)) : null));
+}
+
+function Lookup() {
+  const [tab, setTab] = useState("block");
+  const blockEx = ["blk_989409441141247289", "blk_-2607603250149292767", "blk_-3842070622043972712", "blk_8748609602444106276", "blk_-412555782155839255"];
+  const ipEx = ["193.46.255.92", "54.153.5.93", "121.32.129.19", "159.89.187.108"];
+  const [q, setQ] = useState(blockEx[0]);
+  const ex = tab === "block" ? blockEx : ipEx;
+  const pick = t => { setTab(t); setQ(t === "block" ? blockEx[0] : ipEx[0]); };
+  return h("section", { className: "panel", "aria-label": "Lookup" },
+    h("div", { style: { display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, alignItems: "center" } },
+      h("h2", null, "Triage a block or a source"),
+      h("div", { className: "tabs", role: "tablist" },
+        h("button", { role: "tab", "aria-selected": tab === "block", onClick: () => pick("block") }, "HDFS block"),
+        h("button", { role: "tab", "aria-selected": tab === "ip", onClick: () => pick("ip") }, "Source IP"))),
+    h("div", { className: "lookup" },
+      h("input", { id: "q", value: q, onChange: e => setQ(e.target.value), "aria-label": tab === "block" ? "Block id" : "Source IP", spellCheck: false }),
+      h("select", { id: "ex", value: ex.includes(q) ? q : "", onChange: e => e.target.value && setQ(e.target.value), "aria-label": "Examples" },
+        h("option", { value: "" }, "Examples…"), ex.map(x => h("option", { key: x, value: x }, x)))),
+    tab === "block" ? h(BlockResult, { id: q }) : h(SourceResult, { ip: q }),
+    h("p", { className: "note" }, "Same decision rule as the assistant's detector: exception template, OR PCA residual above threshold, OR a replica on a host whose earlier blocks failed at ≥" + pct(D.test.threshold, 0) + "."));
+}
+
+function Detectors() {
+  return h("section", { className: "panel" },
+    h("h2", null, "Detectors on held-out blocks"),
+    h("p", { className: "note" }, D.test.anomalies + " anomalies among " + D.test.blocks.toLocaleString() + " later blocks. Log counts alone cap recall at " + pct(D.test.ceiling) + "; the topology signal rescued " + D.test.rescued + " more for " + D.test.added_fp + " extra false alarm."),
+    h("div", { className: "scroll" }, h("table", null,
+      h("thead", null, h("tr", null, h("th", null, "Detector"), h("th", { className: "num" }, "Precision"), h("th", { className: "num" }, "Recall"), h("th", null, "F1"))),
+      h("tbody", null, D.detectors.map(d => h("tr", { key: d.name },
+        h("td", null, d.name), h("td", { className: "num" }, d.precision.toFixed(3)), h("td", { className: "num" }, d.recall.toFixed(3)),
+        h("td", null, h("div", { style: { display: "flex", gap: 8, alignItems: "center" } },
+          h("div", { className: "bar", style: { flex: 1 } }, h("i", { style: { width: pct(d.f1) } })),
+          h("span", { className: "num" }, d.f1.toFixed(3))))))))));
+}
+
+function Hosts() {
+  return h("section", { className: "panel" },
+    h("h2", null, "Hotspot DataNodes"),
+    h("p", { className: "note" }, "Share of blocks touching each host that failed, against a 3.9% cluster rate. Binomial test, Bonferroni-corrected over " + D.hosts_total + " hosts."),
+    h("div", { className: "scroll" }, h("table", null,
+      h("thead", null, h("tr", null, h("th", null, "Host"), h("th", { className: "num" }, "Blocks"), h("th", null, "Failure rate"), h("th", null, "Status"))),
+      h("tbody", null, D.hosts.map(x => h("tr", { key: x.ip },
+        h("td", { className: "mono" }, x.ip), h("td", { className: "num" }, x.anomalous + "/" + x.blocks),
+        h("td", null, h("div", { style: { display: "flex", gap: 8, alignItems: "center" } },
+          h("div", { className: "bar", style: { flex: 1 } }, h("i", { className: x.significant ? "hi" : "", style: { width: pct(x.rate) } })),
+          h("span", { className: "num" }, pct(x.rate)))),
+        h("td", null, h("span", { className: "pill " + (x.significant ? "bad" : "ok") }, x.significant ? "HOTSPOT" : "ok"))))))),
+    h("p", { className: "note" }, "Blast radius of " + D.peers.host + ": " + D.peers.degree + " co-replica peers; the closest share " + D.peers.top_peers.slice(0, 2).map(p => p[2] + " of " + p[1] + " blocks").join(" and ") + " that failed."));
+}
+
+function Hourly() {
+  const W = 640, H = 200, L = 34, B = 30, T = 10, R = 8;
+  const max = Math.max(...D.hourly.map(r => r.alerts)), top = Math.ceil(max / 20) * 20;
+  const bw = (W - L - R) / D.hourly.length;
+  const y = v => T + (H - T - B) * (1 - v / top);
+  const ticks = [0, top / 2, top];
+  return h("section", { className: "panel" },
+    h("h2", null, "IDS alerts per hour"),
+    h("p", { className: "note" }, D.sec.etl.alerts + " Suricata alerts from " + D.sec.etl.alert_source_ips + " sources over 24 hours (UTC). No hour crossed the robust burst threshold."),
+    h("div", { className: "scroll" }, h("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": "Hourly IDS alert counts" },
+      ticks.map(t => h("g", { key: t }, h("line", { x1: L, x2: W - R, y1: y(t), y2: y(t), stroke: "var(--line)" }),
+        h("text", { x: L - 6, y: y(t) + 4, textAnchor: "end" }, t))),
+      D.hourly.map((r, i) => h("g", { key: i },
+        h("rect", { x: L + i * bw + 1.5, y: y(r.alerts), width: bw - 3, height: y(0) - y(r.alerts), fill: "var(--accent)", rx: 1 },
+          h("title", null, r.d + " " + r.h + " UTC: " + r.alerts + " alerts, " + r.flows + " flows")),
+        i % 4 === 0 ? h("text", { x: L + i * bw + bw / 2, y: H - 10, textAnchor: "middle" }, r.h) : null)))));
+}
+
+function Scanners() {
+  const t = D.sec.triage.models;
+  return h("section", { className: "panel" },
+    h("h2", null, "Widest port scanners"),
+    h("div", { className: "scroll" }, h("table", null,
+      h("thead", null, h("tr", null, h("th", null, "Source"), h("th", { className: "num" }, "Ports"), h("th", { className: "num" }, "Flows"))),
+      h("tbody", null, D.sec.scanners.map(s => h("tr", { key: s.src_ip },
+        h("td", { className: "mono" }, s.src_ip), h("td", { className: "num" }, s.ports), h("td", { className: "num" }, s.flows)))))),
+    h("p", { className: "note" }, "Alert triage from flow metadata only (no IPs or reputation lists): gradient boosting PR-AUC " + t.gradient_boosting.pr_auc + " vs a " + D.sec.triage.test_alert_rate + " base rate, recall " + pct(t.gradient_boosting.recall) + " at precision " + pct(t.gradient_boosting.precision) + "."));
+}
+
+function Eval() {
+  const E = D.eval, rows = [
+    ["Grounded template (no LLM)", E.det, "full set"],
+    ["Llama 3.3 70B · Bedrock", E.llama3_70b, "50-item subset"],
+    ["Amazon Nova Pro · Bedrock", E.nova_pro, "50-item subset"]];
+  return h("section", { className: "panel" },
+    h("h2", null, "Assistant evaluation"),
+    h("div", { className: "scroll" }, h("table", null,
+      h("thead", null, h("tr", null, h("th", null, "Generator"), h("th", null, "Set"), h("th", { className: "num" }, "Items"), h("th", { className: "num" }, "Accuracy"),
+        h("th", { className: "num" }, "Block P / R"), h("th", { className: "num" }, "Made-up ids"), h("th", { className: "num" }, "Filtered"))),
+      h("tbody", null, rows.map(([n, m, s]) => h("tr", { key: n },
+        h("td", null, n), h("td", null, s), h("td", { className: "num" }, m.n), h("td", { className: "num" }, pct(m.acc)),
+        h("td", { className: "num" }, m.p.toFixed(2) + " / " + m.r.toFixed(2)), h("td", { className: "num" }, m.halluc),
+        h("td", { className: "num" }, m.filtered == null ? "–" : m.filtered)))))),
+    h("p", { className: "note" }, "Both LLMs explain the detector's verdict and cite only ids present in their context. Nova Pro's content filter refused " + E.nova_pro.filtered + " security questions, which count as misses."));
+}
+
+function App() {
+  const s = D.sec.etl;
+  return h("div", { className: "wrap" },
+    h("header", null,
+      h("div", null, h("h1", null, "Incident Triage Console"),
+        h("p", { className: "sub" }, "Log anomaly detection, a host topology graph and IDS telemetry behind one troubleshooting assistant. All figures come from real Loghub HDFS/BGL logs and a Stratosphere Suricata capture.")),
+      h("div", { className: "chips" }, h("span", { className: "chip" }, "HDFS 2008-11-09"), h("span", { className: "chip" }, "Suricata 2021-06-06/07"))),
+    h("div", { className: "strip" },
+      h(Stat, { label: "Detector F1", value: D.detectors[4].f1.toFixed(3), note: "PCA + host risk, held-out blocks" }),
+      h(Stat, { label: "Recall", value: pct(D.detectors[4].recall), note: "up from " + pct(D.detectors[3].recall) + " with logs alone" }),
+      h(Stat, { label: "Hotspot hosts", value: D.hosts.filter(x => x.significant).length + " / " + D.hosts_total, note: D.co_replica_edges.toLocaleString() + " co-replica edges" }),
+      h(Stat, { label: "IDS alerts", value: s.alerts, note: s.alerted_flows + " alerted flows of " + s.flows.toLocaleString() })),
+    h(Lookup),
+    h("div", { className: "grid2" }, h(Detectors), h(Hosts), h(Hourly), h(Scanners)),
+    h(Eval),
+    h("footer", null, "Snapshot of results/*.json from the netincident repo. Lookups run in the page against embedded test-split data."));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>

@@ -92,7 +92,7 @@ def knowledge_base():
         SELECT e.event_id, any_value(e.event_template) t, any_value(e.level) lvl,
                COUNT(DISTINCT CASE WHEN b.is_anomaly AND e.block_id IN (SELECT unnest(?)) THEN e.block_id END) a,
                COUNT(DISTINCT CASE WHEN NOT b.is_anomaly AND e.block_id IN (SELECT unnest(?)) THEN e.block_id END) n
-        FROM hdfs_events e JOIN hdfs_blocks b USING(block_id) GROUP BY 1""",
+        FROM hdfs_events e JOIN hdfs_blocks b USING(block_id) GROUP BY 1 ORDER BY 1""",
                        [list(train_ids), list(train_ids)]).fetchall()
     for eid, t, lvl, a, n in tmpl:
         if a + n:
@@ -106,7 +106,8 @@ def knowledge_base():
     seqs = con.execute("""
         SELECT be.block_id, string_agg(be.event_id || 'x' || be.cnt, ' ' ORDER BY be.event_id), b.is_anomaly
         FROM hdfs_block_event be JOIN hdfs_blocks b USING(block_id)
-        WHERE be.block_id IN (SELECT unnest(?)) GROUP BY be.block_id, b.is_anomaly""", [list(train_ids)]).fetchall()
+        WHERE be.block_id IN (SELECT unnest(?)) GROUP BY be.block_id, b.is_anomaly
+        ORDER BY be.block_id""", [list(train_ids)]).fetchall()
     for bid, seq, y in seqs:
         docs.append(Document(page_content=f"past block {bid} events {seq} outcome {'ANOMALY' if y else 'normal'}",
                              metadata={"kind": "incident", "id": bid, "label": int(y), "seq": seq}))
@@ -118,9 +119,15 @@ def knowledge_base():
             metadata={"kind": "host", "id": ip, "significant": bool(r.significant)}))
     for at, n, racks in con.execute("""
             SELECT alert_type, COUNT(*), string_agg(DISTINCT rack, ' ') FROM bgl_events
-            WHERE is_alert GROUP BY 1""").fetchall():
+            WHERE is_alert GROUP BY 1 ORDER BY 1""").fetchall():
         docs.append(Document(page_content=f"BGL alert type {at} occurred {n} times on racks {racks}",
                              metadata={"kind": "bgl_alert", "id": at}))
+    for sid, sig, cat, sev, n, srcs in con.execute("""
+            SELECT signature_id, any_value(signature), any_value(category), any_value(severity),
+                   COUNT(*), COUNT(DISTINCT src_ip) FROM sec_alerts GROUP BY 1 ORDER BY 1""").fetchall():
+        docs.append(Document(page_content=f"IDS signature {sid} {sig}; category {cat}; severity {sev}; "
+                                          f"fired {n} times from {srcs} source IPs in the Suricata sensor data",
+                             metadata={"kind": "signature", "id": str(sid)}))
     return docs
 
 
@@ -159,7 +166,7 @@ def retrievers():
 
 # ---------------------------------------------------------------- context building
 def structured_context(q):
-    ctx = {"blocks": [], "hosts": [], "racks": []}
+    ctx = {"blocks": [], "hosts": [], "racks": [], "sources": [], "scanners": []}
     for b in dict.fromkeys(BLK.findall(q)):
         ev = block_events(b)
         if not ev:
@@ -174,6 +181,10 @@ def structured_context(q):
             "pca_flag": None if s is None else bool(s.pca_flag),
             "replica_host_risk": None if s is None else round(float(s.host_risk), 4),
         })
+        b = ctx["blocks"][-1]
+        b["host_risk_threshold"] = risk_threshold()
+        # detector decision handed to the generator, so the LLM explains rather than re-detects
+        b["detector_verdict"] = "ANOMALOUS" if block_verdict(b) else "normal"
     hc = host_conc()
     want_hosts = list(dict.fromkeys(IPRE.findall(q)))
     if not want_hosts and re.search(r"\bhosts?\b|datanode", q, re.IGNORECASE):
@@ -188,11 +199,32 @@ def structured_context(q):
                 h["top_co_replica_peers"] = graph["anomaly_hotspot_neighbors"]["top_peers"]
             ctx["hosts"].append(h)
     racks = RACK.findall(q)
-    if racks or re.search(r"\brack|BGL|alert", q, re.IGNORECASE):
+    if racks or re.search(r"\brack|BGL", q, re.IGNORECASE):
         rows = _con().execute("""SELECT rack, SUM(is_alert::INT) a FROM bgl_events WHERE rack IS NOT NULL
-                                 GROUP BY 1 ORDER BY a DESC""").fetchall()
+                                 GROUP BY 1 ORDER BY a DESC, rack""").fetchall()
         ctx["racks"] = [{"rack": r, "alerts": int(a)} for r, a in rows if not racks or r in racks][:5]
+    for ip in want_hosts if want_hosts else IPRE.findall(q):
+        src = security_source(ip)
+        if src:
+            ctx["sources"].append(src)
+    if re.search(r"scanning|scanners?\b|which sources?|attack sources|top attackers|probing", q, re.IGNORECASE) and not ctx["sources"]:
+        sec = json.loads((RES / "security_metrics.json").read_text())
+        ctx["scanners"] = sec["graph"]["top_fanout_sources"]
     return ctx
+
+
+def security_source(ip):
+    """IDS view of one source IP from the Suricata telemetry, or None if the IP never appears there."""
+    con = _con()
+    f = con.execute("""SELECT COUNT(*), COUNT(DISTINCT dest_port), SUM(alerted::INT), MIN(start), MAX(start)
+                       FROM sec_flows WHERE src_ip = ?""", [ip]).fetchone()
+    a = con.execute("""SELECT signature, category, COUNT(*) n FROM sec_alerts WHERE src_ip = ?
+                       GROUP BY 1,2 ORDER BY n DESC LIMIT 3""", [ip]).fetchall()
+    if not f[0] and not a:
+        return None
+    return {"ip": ip, "flows": int(f[0]), "distinct_dest_ports": int(f[1] or 0), "alerted_flows": int(f[2] or 0),
+            "first_seen": str(f[3]), "last_seen": str(f[4]), "alerts": sum(n for _, _, n in a) if a else 0,
+            "top_signatures": [[sig, cat, int(n)] for sig, cat, n in a]}
 
 
 def retrieve(q, ctx):
@@ -217,7 +249,7 @@ def retrieve(q, ctx):
 
 
 def fmt_ctx(ctx):
-    return json.dumps(ctx, default=lambda o: dict(o) if isinstance(o, Counter) else str(o), indent=1)
+    return json.dumps(ctx, default=lambda o: dict(o) if isinstance(o, Counter) else str(o), separators=(",", ":"))
 
 
 def fmt_docs(docs):
@@ -274,8 +306,20 @@ def grounded_answer(x):
         top = ctx["racks"][0]
         lines.append(f"Verdict: rack [{top['rack']}] has the most BGL alerts ({top['alerts']}).")
         lines += [f"- [{r['rack']}]: {r['alerts']} alerts" for r in ctx["racks"][1:]]
+    for src in ctx["sources"]:
+        bad = src["alerts"] > 0 or src["alerted_flows"] > 0
+        lines.append(f"Verdict: source [{src['ip']}] was {'FLAGGED by the IDS' if bad else 'not flagged by the IDS'} "
+                     f"({src['alerts']} alerts).")
+        lines.append(f"- {src['flows']} flows to {src['distinct_dest_ports']} distinct ports, "
+                     f"{src['alerted_flows']} alerted; seen {src['first_seen']} to {src['last_seen']}")
+        for sig, cat, n in src["top_signatures"]:
+            lines.append(f"- [{sig}] ({cat}) x{n}")
+    if ctx["scanners"]:
+        top = ctx["scanners"][0]
+        lines.append(f"Verdict: [{top['src_ip']}] is the widest scanner, probing {top['ports']} distinct ports.")
+        lines += [f"- [{x['src_ip']}]: {x['ports']} ports, {x['flows']} flows" for x in ctx["scanners"][1:]]
     if not lines:
-        tm = [d for d in docs if d.metadata["kind"] in ("template", "bgl_alert", "host")][:3]
+        tm = [d for d in docs if d.metadata["kind"] in ("template", "bgl_alert", "host", "signature")][:3]
         if not tm:
             return "The indexed telemetry does not contain an answer to this question."
         lines.append("Closest knowledge-base entries:")

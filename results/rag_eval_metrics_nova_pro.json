@@ -1,18 +1,19 @@
 {
-  "backend": "deterministic-grounded",
-  "n_items": 114,
+  "backend": "bedrock:us.amazon.nova-pro-v1:0",
+  "n_items": 50,
+  "n_expected": 50,
   "by_type": {
     "block": {
-      "n": 80,
-      "accuracy": 0.85
+      "n": 16,
+      "accuracy": 0.9375
     },
     "host": {
       "n": 3,
-      "accuracy": 1.0
+      "accuracy": 0.3333
     },
     "host_one": {
       "n": 6,
-      "accuracy": 1.0
+      "accuracy": 0.8333
     },
     "missing": {
       "n": 2,
@@ -32,18 +33,19 @@
     },
     "source": {
       "n": 12,
-      "accuracy": 1.0
+      "accuracy": 0.5833
     },
     "template": {
       "n": 4,
       "accuracy": 1.0
     }
   },
-  "block_precision": 0.9375,
-  "block_recall": 0.75,
-  "overall_accuracy": 0.8947,
-  "citations_total": 769,
-  "ungrounded_citations": 0,
-  "latency_ms_p50": 18.8,
-  "latency_ms_p95": 26.9
+  "overall_accuracy": 0.82,
+  "block_precision": 1.0,
+  "block_recall": 0.875,
+  "content_filtered_answers": 6,
+  "ids_cited_total": 134,
+  "hallucinated_ids": 0,
+  "answers_with_hallucinated_id": 0,
+  "latency_ms_p50": 3560.8
 }

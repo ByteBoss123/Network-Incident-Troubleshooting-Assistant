@@ -9,3 +9,4 @@ curl -sSfLO $base/logpai/loghub/master/BGL/BGL_2k.log_structured.csv
 curl -sSfLO $base/logpai/loghub/master/BGL/BGL_2k.log_templates.csv
 curl -sSfLO $base/logpai/loghub/master/HDFS/HDFS_2k.log_templates.csv
 sha256sum -c SHA256SUMS
+mkdir -p netsec && (cd netsec && curl -sSfLO $base/stratosphereips/StratosphereLinuxIPS/develop/dataset/test6-malicious.suricata.json && sha256sum -c ../netsec.SHA256SUMS)

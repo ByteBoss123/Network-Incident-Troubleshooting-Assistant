@@ -5,5 +5,6 @@ python src/etl.py
 python src/detect.py > /dev/null
 python src/graph.py > /dev/null
 python src/graph_feature.py > /dev/null
+python src/security.py > /dev/null
 (cd src && python evaluate.py > /dev/null)
 echo "pipeline complete; see results/"
