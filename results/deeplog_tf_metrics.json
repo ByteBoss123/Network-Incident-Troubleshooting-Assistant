@@ -1,0 +1,46 @@
+{
+  "model": "DeepLog-style 2-layer LSTM (TensorFlow/Keras), window 10, embedding 32, 64 units",
+  "tensorflow": "2.21.0",
+  "train_windows_normal_only": 58216,
+  "vocab_events": 11,
+  "final_train_next_event_acc": 0.8617,
+  "final_holdout_next_event_acc": 0.8251,
+  "g_chosen_on_validation": 3,
+  "n_test_blocks": 2382,
+  "n_test_anomalies": 121,
+  "test": {
+    "precision": 0.7368,
+    "recall": 0.4628,
+    "f1": 0.5685,
+    "roc_auc": 0.7124,
+    "pr_auc": 0.4922
+  },
+  "pca_reference_test": {
+    "precision": 0.962,
+    "recall": 0.6281,
+    "f1": 0.76,
+    "flagged": 79,
+    "roc_auc": 0.8162,
+    "pr_auc": 0.6081,
+    "n_components": 5
+  },
+  "seconds": 41.0,
+  "test_anomalies_caught": {
+    "lstm": 56,
+    "pca": 76,
+    "both": 56,
+    "lstm_or_pca": 76
+  },
+  "test_false_alarms": {
+    "lstm": 20,
+    "pca": 3
+  },
+  "test_lstm_or_pca": {
+    "precision": 0.7835,
+    "recall": 0.6281,
+    "f1": 0.6972
+  },
+  "test_anomalies_with_sequence_identical_to_a_normal_training_block": 45,
+  "pca_missed_with_sequence_identical_to_normal": 45,
+  "pca_missed": 45
+}

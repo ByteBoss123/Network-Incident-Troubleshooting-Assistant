@@ -91,7 +91,7 @@ def build_nx(frames):
 def hotspot_neighbors(G, conc, k=5):
     """For the most anomaly-concentrated host, its heaviest co-replica peers (blast radius)."""
     top = conc.iloc[0]["ip"]
-    nb = sorted(G[top].items(), key=lambda t: -t[1]["anomalous"])[:k]
+    nb = sorted(G[top].items(), key=lambda t: (-t[1]["anomalous"], -t[1]["blocks"], t[0]))[:k]  # deterministic ties
     return {"host": top, "degree": G.degree(top),
             "top_peers": [[n, d["blocks"], d["anomalous"]] for n, d in nb]}
 

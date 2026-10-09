@@ -13,7 +13,7 @@ Log anomaly detection, a telemetry-derived topology graph, IDS security telemetr
 
 `data/download.sh` fetches everything and verifies SHA-256 checksums.
 
-## Pipeline (`./run_all.sh`, then `pytest tests` — 13 tests)
+## Pipeline (`./run_all.sh` or the Airflow DAG, then `pytest tests` — 13 tests)
 
 1. **ETL** (`src/etl.py`, `src/security.py`): Python + DuckDB SQL into event, block-session, block×template, replica, BGL hierarchy, and `sec_flows` / `sec_alerts` / `sec_dns` tables. Checks: 0 duplicate block ids, 0 unlabeled event lines, 0 duplicate flow ids.
 2. **Log anomaly detection** (`src/detect.py`): block event-count vectors, chronological 70/30 split.
@@ -49,13 +49,26 @@ Log anomaly detection, a telemetry-derived topology graph, IDS security telemetr
 
 | Generator | Set | Items | Accuracy | Block P / R | Hallucinated ids | Content-filtered | p50 latency |
 |---|---|---|---|---|---|---|---|
-| Deterministic grounded (no LLM) | full | 114 | 89.5% | 0.94 / 0.75 | 0 of 769 cited | – | 19 ms |
+| Deterministic grounded (no LLM) | full | 114 | 89.5% | 0.94 / 0.75 | 0 of 769 cited | – | 11 ms |
 | Llama 3.3 70B (Bedrock) | 50-item stratified subset | 50 | 96.0% | 1.00 / 0.88 | 0 of 200 | 0 | 3.3 s |
 | Amazon Nova Pro (Bedrock) | 50-item stratified subset | 50 | 82.0% | 1.00 / 0.88 | 0 of 134 | 6 | 3.6 s |
 
 - Both LLMs followed the detector's verdict and cited only ids present in their prompt.
 - Nova Pro's content filter refused 6 security questions ("Is <IP> malicious?"), counted as misses; its other 3 misses list only the top hotspot host when 3 qualify (2) or follow a detector miss (1).
 - Llama's 2 misses: a block the detector itself missed (the model correctly reported the detector's "normal"), and a template question it said the context did not cover.
+
+**Sequence model (TensorFlow, `src/deeplog_tf.py`).** A DeepLog-style 2-layer LSTM (TensorFlow/Keras) learns
+the next log event of normal blocks (58,216 training windows, top-g chosen on validation only).
+On the same 2,382 test blocks it reaches F1 0.569 (P 0.737, R 0.463), below PCA's 0.760; every anomaly it
+catches PCA also catches (56 of 56), with 20 false alarms vs PCA's 3. The reason is in the data: all 45 test
+anomalies PCA misses have event sequences identical, in order, to normal training blocks, so no log-only
+model (counts or order) can separate them. Only the topology signal recovered any of them (12).
+
+**Orchestration (Airflow, `dags/netincident_pipeline.py`).** `etl -> quality_gate -> detect / security ->
+graph -> graph_feature -> deeplog_lstm -> evaluate`, retries 1. The quality gate fails the run before any
+modeling if row counts, block-id uniqueness or event labeling break. `airflow dags test` (Airflow 2.10.5):
+8 of 8 tasks succeeded in about 63 s; the run reproduced the detection, graph-feature and security metrics
+byte for byte. The rerun exposed nondeterministic tie ordering in the hotspot peer list, now fixed.
 
 ## Limitations, disclosed
 

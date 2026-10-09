@@ -44,6 +44,6 @@
   "overall_accuracy": 0.8947,
   "citations_total": 769,
   "ungrounded_citations": 0,
-  "latency_ms_p50": 18.8,
-  "latency_ms_p95": 26.9
+  "latency_ms_p50": 11.0,
+  "latency_ms_p95": 14.7
 }
