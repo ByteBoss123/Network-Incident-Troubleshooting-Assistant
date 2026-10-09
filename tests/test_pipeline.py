@@ -162,3 +162,63 @@ def test_judge_handles_negated_answers():
     assert llm_eval.judge(row, "No, there is no evidence of traffic from 1.2.3.4 being malicious.")[0]
     assert llm_eval.judge({"type": "source", "truth": True}, "Verdict: 1.2.3.4 is FLAGGED")[0]
     assert llm_eval.judge({"type": "block", "truth": 0}, "Verdict: No anomaly detected.")[0]
+
+
+# ---- from-scratch algorithms and the detector interface ----
+import random
+
+import networkx as nx
+
+from algorithms import UnionFind, correlate_incidents, correlate_incidents_naive, dijkstra, k_hop_neighbors, top_k
+
+
+def test_union_find_basic():
+    uf = UnionFind(5)
+    assert uf.union(0, 1) and uf.union(3, 4) and not uf.union(1, 0)
+    assert uf.sets == 3 and uf.find(0) == uf.find(1) and uf.find(2) != uf.find(3)
+
+
+def test_incident_correlation_matches_all_pairs_on_random_events():
+    rng = random.Random(0)
+    for _ in range(20):
+        ev = [{"t": rng.uniform(0, 5000), "src": rng.choice("abcde"), "k2": rng.randrange(6)} for _ in range(120)]
+        G = nx.Graph()
+        G.add_nodes_from(range(len(ev)))
+        G.add_edges_from(correlate_incidents_naive(ev, 300, ("src", "k2")))
+        fast = sorted(sorted(g) for g in correlate_incidents(ev, 300, ("src", "k2")))
+        assert fast == sorted(sorted(c) for c in nx.connected_components(G))
+
+
+def test_graph_algorithms_match_networkx_on_random_graphs():
+    rng = random.Random(1)
+    for _ in range(10):
+        G = nx.gnm_random_graph(60, 150, seed=rng.randrange(10**6))
+        for u, v in G.edges:
+            G[u][v]["weight"] = rng.uniform(0.1, 5)
+        adj = {n: {m: G[n][m]["weight"] for m in G[n]} for n in G}
+        assert k_hop_neighbors(adj, 0, 2) == dict(nx.single_source_shortest_path_length(G, 0, cutoff=2))
+        dist, _ = dijkstra(adj, 0)
+        ref = nx.single_source_dijkstra_path_length(G, 0)
+        assert set(dist) == set(ref) and all(abs(dist[n] - ref[n]) < 1e-9 for n in ref)
+
+
+def test_top_k_matches_sort():
+    rng = random.Random(2)
+    xs = [rng.randrange(1000) for _ in range(500)]
+    assert top_k(xs, 7, key=lambda x: x) == sorted(xs, reverse=True)[:7]
+
+
+def test_algorithm_benchmark_results_on_real_data():
+    r = json.loads((RES / "algorithms_benchmark.json").read_text())
+    for v in r["incident_correlation"].values():
+        assert v["matches_networkx_components"]
+    assert r["incident_correlation"]["ids_alerts_by_source_or_signature"]["incidents"] == 388
+    assert all(v["matches_networkx"] for v in r["topology"]["bfs_blast_radius"].values())
+    assert r["topology"]["dijkstra"]["matches_networkx"] and r["top_k_scanners"]["matches_full_sort"]
+
+
+def test_detector_interface_reproduces_published_metrics():
+    from detectors import evaluate
+    ref = json.loads((RES / "detection_metrics.json").read_text())["models"]
+    for name, m in evaluate().items():
+        assert {k: ref[name][k] for k in m} == m, name

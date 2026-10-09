@@ -101,3 +101,26 @@ compare per-item verdicts with the full-precision run, and run the hallucinated-
 
 **Also found.** The rule-based judge misread negated answers ("no evidence ... malicious"); fixed and every run
 rescored. Bedrock scores did not change.
+
+---
+
+## DR-6 Incident correlation: sort-and-sweep union-find, not all-pairs
+
+**Question.** How should related IDS alerts be grouped into incidents so an analyst triages groups, not lines?
+
+**Rule.** Two alerts belong to the same incident if they share a source IP or a signature and are at most
+30 minutes apart. (Every alert in this capture targets the same sensor, so destination IP would link everything.)
+
+**Options.** (a) compare every pair, then connected components: O(n^2); (b) per key, sort by time and join each
+alert to the next one within the window, merging across keys with union-find: O(n log n). Within one key,
+sorted by time, joining neighbours gives the same groups as joining all pairs, so (b) is exact, not approximate.
+
+**Evidence** (`results/algorithms_benchmark.json`): identical partitions to NetworkX connected components on the
+all-pairs graph, for 745 alerts and 3,512 flows, plus 20 randomized tests. 745 alerts -> 388 incidents (largest 31).
+On 3,512 flows: 5.2 ms vs 3,481 ms (664x).
+
+**Decision.** (b), in `src/algorithms.py`. Blast-radius (BFS), weighted paths (Dijkstra, binary heap) and top-k
+scanners (size-k heap) are written the same way and checked against NetworkX / a full sort.
+
+**Also.** Detectors now share one abstract interface (`src/detectors.py`: fit / score / flag, threshold from a
+train percentile); a test checks it reproduces `detection_metrics.json` exactly, so the refactor changed no prediction.

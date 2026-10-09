@@ -12,6 +12,7 @@ Log anomaly detection, a telemetry-derived topology graph, IDS security telemetr
 | LLM assistant | Llama 3.1 8B 94%, 0 hallucinated ids; prompt A/B kept the grounded prompt over a 76% variant | `results/prompt_ab_metrics.json` |
 | Local inference | llama.cpp Q8_0: -47% size, -26% median latency, +50% tokens/s, same verdict on all 50 questions | `results/local_inference_optimization.json` |
 | Network audit | Live VPC flow logs: 952 unsolicited probes from 670 sources, 98.2% blocked | `results/flowlog_audit.json` |
+| Algorithms and OOD | From-scratch union-find, BFS, Dijkstra and heap top-k, each matching NetworkX/sorting on the real data; incident correlation groups 745 IDS alerts into 388 incidents, 664x faster than all-pairs on 3,512 flows; detectors share one abstract interface that reproduces the published metrics exactly | `src/algorithms.py`, `src/detectors.py`, `results/algorithms_benchmark.json` |
 | Orchestration | Airflow DAG with a data-quality gate, 9/9 tasks succeeded | `dags/netincident_pipeline.py` |
 
 Design decisions and the evidence behind them: [`docs/design_reviews.md`](docs/design_reviews.md).
@@ -27,7 +28,7 @@ Design decisions and the evidence behind them: [`docs/design_reviews.md`](docs/d
 
 `data/download.sh` fetches everything and verifies SHA-256 checksums.
 
-## Pipeline (`./run_all.sh` or the Airflow DAG, then `pytest tests` — 17 tests)
+## Pipeline (`./run_all.sh` or the Airflow DAG, then `pytest tests` — 23 tests)
 
 1. **ETL** (`src/etl.py`, `src/security.py`): Python + DuckDB SQL into event, block-session, block×template, replica, BGL hierarchy, and `sec_flows` / `sec_alerts` / `sec_dns` tables. Checks: 0 duplicate block ids, 0 unlabeled event lines, 0 duplicate flow ids.
 2. **Log anomaly detection** (`src/detect.py`): block event-count vectors, chronological 70/30 split.

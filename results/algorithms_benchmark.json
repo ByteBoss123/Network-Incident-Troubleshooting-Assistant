@@ -1,0 +1,74 @@
+{
+  "window_seconds": 1800,
+  "incident_correlation": {
+    "ids_alerts_by_source_or_signature": {
+      "events": 745,
+      "incidents": 388,
+      "largest_incident": 31,
+      "singletons": 273,
+      "matches_networkx_components": true,
+      "sweep_union_find_ms": 0.89,
+      "all_pairs_ms": 33.93,
+      "speedup": 38.1
+    },
+    "ids_flows_by_source_or_port": {
+      "events": 3512,
+      "incidents": 253,
+      "largest_incident": 3055,
+      "singletons": 179,
+      "matches_networkx_components": true,
+      "sweep_union_find_ms": 5.24,
+      "all_pairs_ms": 3481.42,
+      "speedup": 664.4
+    }
+  },
+  "topology": {
+    "hotspot_host": "10.251.106.10",
+    "hosts": 202,
+    "edges": 13985,
+    "bfs_blast_radius": {
+      "1_hop": {
+        "hosts": 87,
+        "matches_networkx": true,
+        "ms": 0.02
+      },
+      "2_hop": {
+        "hosts": 201,
+        "matches_networkx": true,
+        "ms": 0.84
+      }
+    },
+    "dijkstra": {
+      "reachable_hosts": 201,
+      "matches_networkx": true,
+      "ms": 6.11,
+      "farthest_host_hops": 2
+    }
+  },
+  "top_k_scanners": {
+    "sources": 954,
+    "top5_by_distinct_ports": [
+      [
+        "193.46.255.92",
+        482
+      ],
+      [
+        "192.168.1.132",
+        432
+      ],
+      [
+        "45.143.203.2",
+        51
+      ],
+      [
+        "192.168.1.129",
+        48
+      ],
+      [
+        "45.143.200.102",
+        46
+      ]
+    ],
+    "matches_full_sort": true
+  }
+}
