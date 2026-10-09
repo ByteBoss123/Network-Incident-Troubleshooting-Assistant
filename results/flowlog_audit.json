@@ -1,0 +1,148 @@
+{
+  "window_minutes": 17.5,
+  "records": 1822,
+  "inbound_external_flows": 952,
+  "reply_flows_excluded": 150,
+  "external_sources": 670,
+  "distinct_ports_probed": 671,
+  "ports_with_accepted_inbound": [
+    80
+  ],
+  "unexpected_accepted_ports": [],
+  "rejected_flows": 935,
+  "rejected_share": 0.9821,
+  "top_ports_by_sources": [
+    {
+      "proto": "tcp",
+      "port": 23,
+      "flows": 33,
+      "sources": 21,
+      "accepted": 0,
+      "rejected": 33
+    },
+    {
+      "proto": "tcp",
+      "port": 80,
+      "flows": 25,
+      "sources": 15,
+      "accepted": 17,
+      "rejected": 8
+    },
+    {
+      "proto": "icmp",
+      "port": 0,
+      "flows": 25,
+      "sources": 12,
+      "accepted": 0,
+      "rejected": 25
+    },
+    {
+      "proto": "tcp",
+      "port": 22,
+      "flows": 10,
+      "sources": 9,
+      "accepted": 0,
+      "rejected": 10
+    },
+    {
+      "proto": "tcp",
+      "port": 8090,
+      "flows": 9,
+      "sources": 9,
+      "accepted": 0,
+      "rejected": 9
+    },
+    {
+      "proto": "tcp",
+      "port": 5900,
+      "flows": 8,
+      "sources": 8,
+      "accepted": 0,
+      "rejected": 8
+    },
+    {
+      "proto": "tcp",
+      "port": 443,
+      "flows": 8,
+      "sources": 7,
+      "accepted": 0,
+      "rejected": 8
+    },
+    {
+      "proto": "tcp",
+      "port": 10050,
+      "flows": 6,
+      "sources": 6,
+      "accepted": 0,
+      "rejected": 6
+    },
+    {
+      "proto": "tcp",
+      "port": 2077,
+      "flows": 6,
+      "sources": 6,
+      "accepted": 0,
+      "rejected": 6
+    },
+    {
+      "proto": "tcp",
+      "port": 7744,
+      "flows": 5,
+      "sources": 5,
+      "accepted": 0,
+      "rejected": 5
+    },
+    {
+      "proto": "tcp",
+      "port": 50580,
+      "flows": 5,
+      "sources": 5,
+      "accepted": 0,
+      "rejected": 5
+    },
+    {
+      "proto": "tcp",
+      "port": 7707,
+      "flows": 4,
+      "sources": 4,
+      "accepted": 0,
+      "rejected": 4
+    },
+    {
+      "proto": "tcp",
+      "port": 47001,
+      "flows": 4,
+      "sources": 4,
+      "accepted": 0,
+      "rejected": 4
+    },
+    {
+      "proto": "tcp",
+      "port": 1001,
+      "flows": 4,
+      "sources": 4,
+      "accepted": 0,
+      "rejected": 4
+    },
+    {
+      "proto": "tcp",
+      "port": 4369,
+      "flows": 4,
+      "sources": 4,
+      "accepted": 0,
+      "rejected": 4
+    }
+  ],
+  "by_interface": {
+    "load_balancer": {
+      "flows": 426,
+      "sources": 376,
+      "accepted": 17
+    },
+    "ecs_task_public_ip": {
+      "flows": 526,
+      "sources": 330,
+      "accepted": 0
+    }
+  }
+}

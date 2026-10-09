@@ -112,8 +112,16 @@ data. One rule is open to the internet (TCP 80 on an internet-facing load balanc
 80 is the third most-alerted port in the IDS data (18 alerted flows from 47 sources), so it is reported as medium.
 None of the other top-10 alerted ports (1433, 22, 2375, 3389, 8080, 6379, 4573, 8545, 445) is exposed. Also flagged:
 2 task interfaces with public IPs their security groups never admit internet traffic to, and 2 unattached security
-groups. Runs as the `netconfig_audit` task in the Airflow DAG (9 of 9 tasks succeeded). The IDS data comes from a
-different network, so it is a prior on what attackers probe, not traffic seen by this account.
+groups. Runs as the `netconfig_audit` task in the Airflow DAG (9 of 9 tasks succeeded).
+
+**Validated on the account's own traffic (`src/flowlog_audit.py`, `results/flowlog_audit.json`).** VPC Flow Logs were
+enabled on the 4 public interfaces (2 load balancer, 2 ECS task) for one session, then removed. In 17.5 minutes of
+delivered records: 952 unsolicited inbound attempts from 670 internet sources across 671 ports; 98.2% rejected by the
+security groups; port 80 was the only port that accepted traffic (17 flows); HTTPS probes were refused because the
+load balancer has no HTTPS listener; the two task interfaces with public IPs drew 526 of the probes (55%) from 330
+sources, all rejected, which confirms the public IPs only add attack surface. Most-probed ports: 23, 80, ICMP, 22,
+8090, 5900, 443, 10050. Replies to the tasks' own outbound connections (accepted packets to ephemeral ports) are
+excluded.
 
 **Design reviews:** `docs/design_reviews.md` (detector, graph store, generator and prompt, orchestration).
 
