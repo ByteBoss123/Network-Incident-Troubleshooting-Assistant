@@ -1,0 +1,17 @@
+{
+  "loaded_via": "Neo4j AuraDB Free (instance 6e828804), Aura Query workspace, 2026-10-09",
+  "host_anomaly_rate_top5": [
+    "10.251.106.10 55/62",
+    "10.251.198.33 19/125",
+    "10.251.195.70 16/131",
+    "10.251.31.160 13/117",
+    "10.251.75.79 11/114"
+  ],
+  "hosts": 203,
+  "co_replica_edges": 13985,
+  "top_rack": "R30 61",
+  "top_scanner": "193.46.255.92 482",
+  "top_signature": "2010935 131",
+  "total_nodes": 11303,
+  "total_relationships": 58099
+}

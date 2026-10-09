@@ -1,0 +1,8 @@
+{
+  "host_anomaly_rate_top5": true,
+  "hosts": true,
+  "co_replica_edges": true,
+  "top_rack": true,
+  "top_scanner": true,
+  "top_signature": true
+}
