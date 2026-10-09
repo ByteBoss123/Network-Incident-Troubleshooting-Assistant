@@ -108,7 +108,8 @@ def test_source_question_routes_to_ids():
 
 def test_bedrock_llm_answers_rescore_reproducibly():
     import llm_eval
-    for tag, path in [("nova_pro", "llm_answers_nova-pro.jsonl"), ("llama3_70b", "llm_answers_llama3.jsonl")]:
+    for tag, path in [("nova_pro", "llm_answers_nova-pro.jsonl"), ("llama3_70b", "llm_answers_llama3.jsonl"),
+                      ("local_qwen1_5b", "llm_answers_local_qwen.jsonl")]:
         saved = json.loads((RES / f"rag_eval_metrics_{tag}.json").read_text())
         again = llm_eval.score(RES / path, tag=tag, prompts_path=RES / "llm_prompts_bedrock.jsonl")
         assert again["overall_accuracy"] == saved["overall_accuracy"]

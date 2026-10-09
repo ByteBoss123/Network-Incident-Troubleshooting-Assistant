@@ -52,8 +52,16 @@ Log anomaly detection, a telemetry-derived topology graph, IDS security telemetr
 | Deterministic grounded (no LLM) | full | 114 | 89.5% | 0.94 / 0.75 | 0 of 769 cited | – | 11 ms |
 | Llama 3.3 70B (Bedrock) | 50-item stratified subset | 50 | 96.0% | 1.00 / 0.88 | 0 of 200 | 0 | 3.3 s |
 | Amazon Nova Pro (Bedrock) | 50-item stratified subset | 50 | 82.0% | 1.00 / 0.88 | 0 of 134 | 6 | 3.6 s |
+| Qwen2.5-1.5B-Instruct, local CPU (8 vCPU, no API) | 50-item stratified subset | 50 | 64.0% | 0.62 / 1.00 | 0 of 106 | 0 | 17.0 s |
 
-- Both LLMs followed the detector's verdict and cited only ids present in their prompt.
+- Both hosted LLMs followed the detector's verdict and cited only ids present in their prompt.
+- **Local inference** (`local_llm/run_local.py`, Hugging Face Transformers on CPU, greedy decoding, same frozen prompts):
+  Qwen2.5-1.5B also cited 0 hallucinated ids, yet answered 64%: it called 6 of 12 flagged/unflagged sources wrong,
+  read "detector_verdict: normal" as "not healthy" on 5 blocks, and invented a failure cause for both
+  nonexistent block ids. Id-grounding alone does not catch fabricated reasoning; the verdict checks do.
+  About 4.6 output tokens/s on 8 vCPU (median 17 s per answer), 11 s model load.
+- The first two local runs produced gibberish for every prompt of roughly 410-510 tokens (and only those);
+  switching from PyTorch's fused SDPA attention to the eager implementation fixed it (runner documents this).
 - Nova Pro's content filter refused 6 security questions ("Is <IP> malicious?"), counted as misses; its other 3 misses list only the top hotspot host when 3 qualify (2) or follow a detector miss (1).
 - Llama's 2 misses: a block the detector itself missed (the model correctly reported the detector's "normal"), and a template question it said the context did not cover.
 

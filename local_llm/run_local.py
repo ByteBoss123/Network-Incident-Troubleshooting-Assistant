@@ -14,22 +14,28 @@ out_path = sys.argv[2]
 torch.set_num_threads(os.cpu_count())
 t0 = time.time()
 tok = AutoTokenizer.from_pretrained(MODEL)
-model = AutoModelForCausalLM.from_pretrained(MODEL, torch_dtype=torch.float32)
+# eager attention: the fused SDPA CPU path produced gibberish for prompts of ~410-510 tokens in runs 1-2
+model = AutoModelForCausalLM.from_pretrained(MODEL, torch_dtype=torch.float32,
+                                             attn_implementation=os.environ.get("ATTN_IMPL", "eager"))
 model.eval()
 load_s = time.time() - t0
 with open(out_path, "w") as f:
     for i, ids in pack["items"]:
         user = "\n".join(pack["lines"][k] for k in ids)
         msgs = [{"role": "system", "content": pack["system"]}, {"role": "user", "content": user}]
-        enc = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt")
+        # explicit attention mask + the tokenizer's own pad token: Qwen's end-of-turn token also appears
+        # inside the chat prompt, so using it as pad corrupted ~10 of 50 generations in the first run
+        enc = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt", return_dict=True)
+        n_in = enc["input_ids"].shape[1]
         t = time.perf_counter()
         with torch.no_grad():
-            gen = model.generate(enc, max_new_tokens=300, do_sample=False, pad_token_id=tok.eos_token_id)
+            gen = model.generate(**enc, max_new_tokens=300, do_sample=False,
+                                 pad_token_id=tok.pad_token_id if tok.pad_token_id is not None else tok.eos_token_id)
         ms = (time.perf_counter() - t) * 1000
-        new = gen[0, enc.shape[1]:]
+        new = gen[0, n_in:]
         ans = tok.decode(new, skip_special_tokens=True)
         f.write(json.dumps({"i": i, "answer": ans, "model": f"local:{MODEL}", "latency_ms": round(ms, 1),
-                            "prompt_tokens": int(enc.shape[1]), "output_tokens": int(new.shape[0])}) + "\n")
+                            "prompt_tokens": int(n_in), "output_tokens": int(new.shape[0])}) + "\n")
         f.flush()
-        print(i, round(ms), int(enc.shape[1]), int(new.shape[0]), flush=True)
+        print(i, round(ms), int(n_in), int(new.shape[0]), flush=True)
 print("MODEL_LOAD_S", round(load_s, 1), "CPUS", os.cpu_count())
