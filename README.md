@@ -78,6 +78,14 @@ modeling if row counts, block-id uniqueness or event labeling break. `airflow da
 8 of 8 tasks succeeded in about 63 s; the run reproduced the detection, graph-feature and security metrics
 byte for byte. The rerun exposed nondeterministic tie ordering in the hotspot peer list, now fixed.
 
+**Prompt engineering A/B (`src/prompt_ab.py`, `results/prompt_ab_metrics.json`).** Three system prompts on the same
+50 frozen contexts. A rule-heavy prompt with a one-shot example, revised on half the questions only, did not beat
+the original on the held-out half (Nova Lite 20/25 vs 21/25) and cut Llama 3.1 8B, never seen while writing it,
+from 94% to 76%, copying the example id into 4 answers. The original grounded prompt stays. Llama 3.1 8B with the
+original prompt scored 94% (0 hallucinated ids of 158), 2 points below Llama 3.3 70B.
+
+**Design reviews:** `docs/design_reviews.md` (detector, graph store, generator and prompt, orchestration).
+
 ## Limitations, disclosed
 
 - **LLM subset.** The Bedrock run used a seeded, stratified 50-item subset (all 34 non-block items + 8 anomalous + 8 normal blocks) because prompts had to be embedded in the Bedrock call script. The exact prompts sent are frozen in `results/llm_prompts_bedrock.jsonl`; prompt lengths were checked against the local copies (0 mismatches).

@@ -1,0 +1,51 @@
+{
+  "backend": "bedrock:us.meta.llama3-1-8b-instruct-v1:0",
+  "n_items": 50,
+  "n_expected": 50,
+  "by_type": {
+    "block": {
+      "n": 16,
+      "accuracy": 0.9375
+    },
+    "host": {
+      "n": 3,
+      "accuracy": 0.6667
+    },
+    "host_one": {
+      "n": 6,
+      "accuracy": 1.0
+    },
+    "missing": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "rack": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "scanner": {
+      "n": 2,
+      "accuracy": 0.5
+    },
+    "signature": {
+      "n": 3,
+      "accuracy": 1.0
+    },
+    "source": {
+      "n": 12,
+      "accuracy": 1.0
+    },
+    "template": {
+      "n": 4,
+      "accuracy": 1.0
+    }
+  },
+  "overall_accuracy": 0.94,
+  "block_precision": 1.0,
+  "block_recall": 0.875,
+  "content_filtered_answers": 0,
+  "ids_cited_total": 158,
+  "hallucinated_ids": 0,
+  "answers_with_hallucinated_id": 0,
+  "latency_ms_p50": 2864.2
+}
