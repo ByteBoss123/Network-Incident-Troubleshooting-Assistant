@@ -144,3 +144,13 @@ def test_netconfig_audit_sg_reference_only_rule_is_not_internet_exposed():
     out = na.audit(_snap(rules, [{"id": "e1", "type": "interface", "public_ip": False, "sgs": ["sg-a"]}]),
                    {8000: {"flows": 1, "alerted": 1, "sources": 1}})
     assert out["summary"]["internet_exposed_rules"] == 0
+
+
+def test_local_quantization_results_rescore():
+    import llm_eval
+    saved = json.loads((RES / "local_inference_optimization.json").read_text())
+    for tag in ("gguf_fp16", "gguf_q8_0", "gguf_q4_k_m"):
+        m = llm_eval.score(RES / "local_opt" / f"answers_{tag}.jsonl", tag=f"local_{tag}",
+                           prompts_path=RES / "llm_prompts_bedrock.jsonl")
+        assert m["overall_accuracy"] == saved[tag]["accuracy"]
+    assert saved["gguf_q4_k_m"]["file_mb"] < 0.35 * saved["gguf_fp16"]["file_mb"]

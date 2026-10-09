@@ -1,0 +1,50 @@
+{
+  "gguf_fp16": {
+    "accuracy": 0.48,
+    "hallucinated_ids": 1,
+    "ids_cited": 77,
+    "latency_ms_p50": 9079.7,
+    "output_tokens_per_s": 8.09,
+    "answers_at_300_token_cap": 1,
+    "load_s": 45.7,
+    "file_mb": 3560.4
+  },
+  "gguf_q8_0": {
+    "accuracy": 0.48,
+    "hallucinated_ids": 1,
+    "ids_cited": 82,
+    "latency_ms_p50": 7101.4,
+    "output_tokens_per_s": 11.2,
+    "answers_at_300_token_cap": 1,
+    "load_s": 6.3,
+    "file_mb": 1894.5
+  },
+  "gguf_q4_k_m": {
+    "accuracy": 0.5,
+    "hallucinated_ids": 0,
+    "ids_cited": 81,
+    "latency_ms_p50": 6362.8,
+    "output_tokens_per_s": 11.38,
+    "answers_at_300_token_cap": 1,
+    "load_s": 4.7,
+    "file_mb": 1117.3
+  },
+  "torch_int8_perchannel": {
+    "accuracy": 0.36,
+    "hallucinated_ids": 32,
+    "ids_cited": 51,
+    "latency_ms_p50": 25790.1,
+    "output_tokens_per_s": 11.48,
+    "answers_at_300_token_cap": 46
+  },
+  "torch_int8_all": {
+    "accuracy": 0.38,
+    "hallucinated_ids": 125,
+    "ids_cited": 149,
+    "latency_ms_p50": 21950.7,
+    "output_tokens_per_s": 13.59,
+    "answers_at_300_token_cap": 48
+  },
+  "host": "CodeBuild BUILD_GENERAL1_LARGE, 8 vCPU Intel Xeon Platinum 8488C, same machine for all three GGUF runs; PyTorch int8 runs on the same CPU model, separate job",
+  "engines_note": "llama.cpp (llama-cpp-python 0.2.90, default chat-completion sampling with temperature 0) vs Hugging Face fp32 greedy (64%): compare quantization levels within an engine"
+}

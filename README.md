@@ -78,6 +78,23 @@ modeling if row counts, block-id uniqueness or event labeling break. `airflow da
 8 of 8 tasks succeeded in about 63 s; the run reproduced the detection, graph-feature and security metrics
 byte for byte. The rerun exposed nondeterministic tie ordering in the hotspot peer list, now fixed.
 
+**Local inference optimization (`local_llm/run_gguf.py`, `results/local_inference_optimization.json`).** Same 50
+frozen prompts, Qwen2.5-1.5B-Instruct on 8 vCPU (Xeon 8488C):
+
+| Engine / precision | Accuracy | Model file | Median latency | Output tokens/s | Hallucinated ids |
+|---|---|---|---|---|---|
+| llama.cpp FP16 GGUF (baseline) | 48% | 3,560 MB | 9.1 s | 8.1 | 1 of 77 |
+| llama.cpp Q8_0 | 48% | 1,895 MB | 7.1 s | 11.2 | 1 of 82 |
+| **llama.cpp Q4_K_M** | **50%** | **1,117 MB** | **6.4 s** | **11.4** | **0 of 81** |
+| PyTorch dynamic int8, all Linear layers | 38% | | 22.0 s | 13.6 | 125 of 149 |
+| PyTorch dynamic int8, per-channel, fp32 head | 36% | | 25.8 s | 11.5 | 32 of 51 |
+
+4-bit k-quant cut the model 69% and median latency 30% with no accuracy loss against its FP16 baseline. PyTorch
+dynamic int8 (activations quantized at run time) broke the model: 46-48 of 50 answers ran to the 300-token cap and
+drifted off topic, even with per-channel weight scales and the output head kept in fp32. Compare within an engine:
+llama.cpp's FP16 baseline scores below the Hugging Face fp32 run (64%) under its default chat-completion sampling.
+The one hallucinated id in the FP16/Q8 runs is a real copying error (an extra digit inserted into a block id).
+
 **Prompt engineering A/B (`src/prompt_ab.py`, `results/prompt_ab_metrics.json`).** Three system prompts on the same
 50 frozen contexts. A rule-heavy prompt with a one-shot example, revised on half the questions only, did not beat
 the original on the held-out half (Nova Lite 20/25 vs 21/25) and cut Llama 3.1 8B, never seen while writing it,

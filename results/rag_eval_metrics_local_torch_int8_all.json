@@ -1,0 +1,51 @@
+{
+  "backend": "local:Qwen/Qwen2.5-1.5B-Instruct:int8",
+  "n_items": 50,
+  "n_expected": 50,
+  "by_type": {
+    "block": {
+      "n": 16,
+      "accuracy": 0.5
+    },
+    "host": {
+      "n": 3,
+      "accuracy": 0.0
+    },
+    "host_one": {
+      "n": 6,
+      "accuracy": 0.5
+    },
+    "missing": {
+      "n": 2,
+      "accuracy": 0.5
+    },
+    "rack": {
+      "n": 2,
+      "accuracy": 0.5
+    },
+    "scanner": {
+      "n": 2,
+      "accuracy": 0.0
+    },
+    "signature": {
+      "n": 3,
+      "accuracy": 0.0
+    },
+    "source": {
+      "n": 12,
+      "accuracy": 0.5
+    },
+    "template": {
+      "n": 4,
+      "accuracy": 0.0
+    }
+  },
+  "overall_accuracy": 0.38,
+  "block_precision": 0.0,
+  "block_recall": 0.0,
+  "content_filtered_answers": 0,
+  "ids_cited_total": 149,
+  "hallucinated_ids": 125,
+  "answers_with_hallucinated_id": 14,
+  "latency_ms_p50": 21950.7
+}

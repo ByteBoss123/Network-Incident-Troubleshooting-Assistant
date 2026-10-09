@@ -1,0 +1,51 @@
+{
+  "backend": "local:Qwen2.5-1.5B-Instruct:gguf-fp16",
+  "n_items": 50,
+  "n_expected": 50,
+  "by_type": {
+    "block": {
+      "n": 16,
+      "accuracy": 0.625
+    },
+    "host": {
+      "n": 3,
+      "accuracy": 0.3333
+    },
+    "host_one": {
+      "n": 6,
+      "accuracy": 1.0
+    },
+    "missing": {
+      "n": 2,
+      "accuracy": 0.0
+    },
+    "rack": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "scanner": {
+      "n": 2,
+      "accuracy": 0.5
+    },
+    "signature": {
+      "n": 3,
+      "accuracy": 1.0
+    },
+    "source": {
+      "n": 12,
+      "accuracy": 0.0
+    },
+    "template": {
+      "n": 4,
+      "accuracy": 0.25
+    }
+  },
+  "overall_accuracy": 0.48,
+  "block_precision": 0.5833,
+  "block_recall": 0.875,
+  "content_filtered_answers": 0,
+  "ids_cited_total": 77,
+  "hallucinated_ids": 1,
+  "answers_with_hallucinated_id": 1,
+  "latency_ms_p50": 9079.7
+}

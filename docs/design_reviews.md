@@ -83,3 +83,17 @@ event line maps to a labeled block, so a broken extract stops before any model i
 
 **Evidence.** `airflow dags test` (Airflow 2.10.5): 8 of 8 tasks succeeded in about 63 s; detection, graph-feature
 and security metrics reproduced byte for byte; the RAG eval reproduced accuracy and citations (only timings differ).
+
+---
+
+## DR-5 Local inference: 4-bit GGUF in llama.cpp, not PyTorch dynamic int8
+
+**Question.** How should the assistant run on a CPU-only host with no hosted API?
+
+**Evidence** (`results/local_inference_optimization.json`, same 50 prompts, same 8-vCPU machine for the GGUF runs):
+llama.cpp Q4_K_M 50% accuracy, 1,117 MB, 6.4 s median vs FP16 48%, 3,560 MB, 9.1 s. PyTorch dynamic int8
+(all layers; per-channel with an fp32 head) produced degenerate output: 36-38% accuracy, 46-48 of 50 answers at the
+300-token cap, 32-125 hallucinated ids.
+
+**Decision.** Ship Q4_K_M through llama.cpp for local deployments. Treat any new quantization as a model change:
+rerun the 50-question set and the hallucinated-id check before using it.
