@@ -36,12 +36,13 @@ def run():
         items = [json.loads(line) for line in (RES / f"rag_eval_items_pe_{model}_{tag}.jsonl").open()]
         example_ids = sum("blk_123" in r["answer"] and "blk_1234567890123" not in r["answer"] for r in items)
         filtered = [r for r in items if llm_eval.FILTERED in r["answer"]]
+        kept = [r for r in items if r not in filtered]
         out[f"{model}/{tag}"] = {
             "accuracy": m["overall_accuracy"], "correct": sum(r["ok"] for r in items), "n": len(items),
             "half_A": sum(r["ok"] for r in items if half[r["i"]] == "A"),
             "half_B": sum(r["ok"] for r in items if half[r["i"]] == "B"),
             "content_filtered": len(filtered),
-            "correct_excluding_filtered": f"{sum(r['ok'] for r in items if r not in filtered)}/{len(items) - len(filtered)}",
+            "correct_excluding_filtered": f"{sum(r['ok'] for r in kept)}/{len(kept)}",
             "hallucinated_ids": m["hallucinated_ids"], "ids_cited": m["ids_cited_total"],
             "answers_citing_example_id": int(example_ids),
             "block_precision": m["block_precision"], "block_recall": m["block_recall"],
