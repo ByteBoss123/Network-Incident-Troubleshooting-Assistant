@@ -2,6 +2,20 @@
 
 Log anomaly detection, a telemetry-derived topology graph, IDS security telemetry, and a LangChain retrieval assistant for incident triage, evaluated with real LLMs on Amazon Bedrock. Everything runs on real, public data.
 
+## Results at a glance
+
+| Area | Result | Evidence |
+|---|---|---|
+| Log anomaly detection | PCA residual F1 0.760 on 2,382 held-out blocks (Isolation Forest 0.548, TensorFlow LSTM 0.569) | `results/detection_metrics.json`, `results/deeplog_tf_metrics.json` |
+| Topology graph feature | Recall 62.8% -> 72.7%, F1 0.826 (11,303-node Neo4j graph, 6/6 parity checks) | `results/graph_feature_metrics.json`, `results/neo4j_parity.json` |
+| Security alert triage | PR-AUC 0.430 on Suricata flows (2.6x base rate) | `results/security_metrics.json` |
+| LLM assistant | Llama 3.1 8B 94%, 0 hallucinated ids; prompt A/B kept the grounded prompt over a 76% variant | `results/prompt_ab_metrics.json` |
+| Local inference | llama.cpp Q8_0: -47% size, -26% median latency, +50% tokens/s, same verdict on all 50 questions | `results/local_inference_optimization.json` |
+| Network audit | Live VPC flow logs: 952 unsolicited probes from 670 sources, 98.2% blocked | `results/flowlog_audit.json` |
+| Orchestration | Airflow DAG with a data-quality gate, 9/9 tasks succeeded | `dags/netincident_pipeline.py` |
+
+Design decisions and the evidence behind them: [`docs/design_reviews.md`](docs/design_reviews.md).
+
 ## Data
 
 | Source | What | Size |
@@ -13,7 +27,7 @@ Log anomaly detection, a telemetry-derived topology graph, IDS security telemetr
 
 `data/download.sh` fetches everything and verifies SHA-256 checksums.
 
-## Pipeline (`./run_all.sh` or the Airflow DAG, then `pytest tests` — 13 tests)
+## Pipeline (`./run_all.sh` or the Airflow DAG, then `pytest tests` — 17 tests)
 
 1. **ETL** (`src/etl.py`, `src/security.py`): Python + DuckDB SQL into event, block-session, block×template, replica, BGL hierarchy, and `sec_flows` / `sec_alerts` / `sec_dns` tables. Checks: 0 duplicate block ids, 0 unlabeled event lines, 0 duplicate flow ids.
 2. **Log anomaly detection** (`src/detect.py`): block event-count vectors, chronological 70/30 split.
