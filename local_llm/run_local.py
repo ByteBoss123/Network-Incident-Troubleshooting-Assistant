@@ -15,13 +15,22 @@ torch.set_num_threads(os.cpu_count())
 t0 = time.time()
 tok = AutoTokenizer.from_pretrained(MODEL)
 # eager attention: the fused SDPA CPU path produced gibberish for prompts of ~410-510 tokens in runs 1-2
-model = AutoModelForCausalLM.from_pretrained(MODEL, torch_dtype=torch.float32,
+QUANT = os.environ.get("QUANT", "fp32")
+dtype = torch.bfloat16 if QUANT == "bf16" else torch.float32  # bf16 uses the CPU's AMX/AVX-512 BF16 units
+model = AutoModelForCausalLM.from_pretrained(MODEL, torch_dtype=dtype,
                                              attn_implementation=os.environ.get("ATTN_IMPL", "eager"))
 model.eval()
 # Model optimization: dynamic int8 quantization of every nn.Linear (weights int8, activations quantized on the fly)
-QUANT = os.environ.get("QUANT", "fp32")
-if QUANT == "int8":
-    model = torch.ao.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
+if QUANT == "int8_all":  # every nn.Linear incl. the output head: produced degenerate 300-token answers
+    model = torch.ao.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8, inplace=True)
+elif QUANT == "int8_tensor":  # per-tensor scales, lm_head fp32: 7 of the first 8 answers ran to the 300-token cap
+    targets = {n for n, m in model.named_modules() if isinstance(m, torch.nn.Linear) and n != "lm_head"}
+    model = torch.ao.quantization.quantize_dynamic(model, targets, dtype=torch.qint8, inplace=True)
+elif QUANT == "int8":  # per-channel weight scales (one per output row), lm_head fp32
+    from torch.ao.quantization import per_channel_dynamic_qconfig
+    targets = {n: per_channel_dynamic_qconfig for n, m in model.named_modules()
+               if isinstance(m, torch.nn.Linear) and n != "lm_head"}
+    model = torch.ao.quantization.quantize_dynamic(model, targets, dtype=torch.qint8, inplace=True)
 torch.save(model.state_dict(), "/tmp/weights.pt")  # on-disk size counts int8 packed weights correctly
 weights_mb = os.path.getsize("/tmp/weights.pt") / 1e6
 load_s = time.time() - t0
