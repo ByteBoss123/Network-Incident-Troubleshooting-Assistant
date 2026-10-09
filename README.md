@@ -52,11 +52,11 @@ Log anomaly detection, a telemetry-derived topology graph, IDS security telemetr
 | Deterministic grounded (no LLM) | full | 114 | 89.5% | 0.94 / 0.75 | 0 of 769 cited | – | 11 ms |
 | Llama 3.3 70B (Bedrock) | 50-item stratified subset | 50 | 96.0% | 1.00 / 0.88 | 0 of 200 | 0 | 3.3 s |
 | Amazon Nova Pro (Bedrock) | 50-item stratified subset | 50 | 82.0% | 1.00 / 0.88 | 0 of 134 | 6 | 3.6 s |
-| Qwen2.5-1.5B-Instruct, local CPU (8 vCPU, no API) | 50-item stratified subset | 50 | 64.0% | 0.62 / 1.00 | 0 of 106 | 0 | 17.0 s |
+| Qwen2.5-1.5B-Instruct, local CPU (8 vCPU, no API) | 50-item stratified subset | 50 | 62.0% | 0.62 / 1.00 | 0 of 106 | 0 | 17.0 s |
 
 - Both hosted LLMs followed the detector's verdict and cited only ids present in their prompt.
 - **Local inference** (`local_llm/run_local.py`, Hugging Face Transformers on CPU, greedy decoding, same frozen prompts):
-  Qwen2.5-1.5B also cited 0 hallucinated ids, yet answered 64%: it called 6 of 12 flagged/unflagged sources wrong,
+  Qwen2.5-1.5B also cited 0 hallucinated ids, yet answered 62% (64% before the scorer fix below): it called 6 of 12 flagged/unflagged sources wrong,
   read "detector_verdict: normal" as "not healthy" on 5 blocks, and invented a failure cause for both
   nonexistent block ids. Id-grounding alone does not catch fabricated reasoning; the verdict checks do.
   About 4.6 output tokens/s on 8 vCPU (median 17 s per answer), 11 s model load.
@@ -79,21 +79,25 @@ modeling if row counts, block-id uniqueness or event labeling break. `airflow da
 byte for byte. The rerun exposed nondeterministic tie ordering in the hotspot peer list, now fixed.
 
 **Local inference optimization (`local_llm/run_gguf.py`, `results/local_inference_optimization.json`).** Same 50
-frozen prompts, Qwen2.5-1.5B-Instruct on 8 vCPU (Xeon 8488C):
+frozen prompts, Qwen2.5-1.5B-Instruct, greedy decoding, all three GGUF runs in one job on a 48-vCPU machine:
 
-| Engine / precision | Accuracy | Model file | Median latency | Output tokens/s | Hallucinated ids |
-|---|---|---|---|---|---|
-| llama.cpp FP16 GGUF (baseline) | 48% | 3,560 MB | 9.1 s | 8.1 | 1 of 77 |
-| llama.cpp Q8_0 | 48% | 1,895 MB | 7.1 s | 11.2 | 1 of 82 |
-| **llama.cpp Q4_K_M** | **50%** | **1,117 MB** | **6.4 s** | **11.4** | **0 of 81** |
-| PyTorch dynamic int8, all Linear layers | 38% | | 22.0 s | 13.6 | 125 of 149 |
-| PyTorch dynamic int8, per-channel, fp32 head | 36% | | 25.8 s | 11.5 | 32 of 51 |
+| llama.cpp precision | Accuracy | Model file | Median latency | Output tokens/s |
+|---|---|---|---|---|
+| FP16 (baseline) | 60% | 3,560 MB | 2.93 s | 25.1 |
+| **Q8_0** | **60%** (same verdict on all 50 items) | **1,895 MB** | **2.16 s** | **37.6** |
+| Q4_K_M | 54% | 1,117 MB | 1.86 s | 35.3 |
 
-4-bit k-quant cut the model 69% and median latency 30% with no accuracy loss against its FP16 baseline. PyTorch
-dynamic int8 (activations quantized at run time) broke the model: 46-48 of 50 answers ran to the 300-token cap and
-drifted off topic, even with per-channel weight scales and the output head kept in fp32. Compare within an engine:
-llama.cpp's FP16 baseline scores below the Hugging Face fp32 run (64%) under its default chat-completion sampling.
-The one hallucinated id in the FP16/Q8 runs is a real copying error (an extra digit inserted into a block id).
+8-bit cut the model 47%, median latency 26% and raised throughput 50% with identical per-item results. 4-bit lost
+3 questions, one of them dangerous for triage (an anomalous block called normal), so Q8_0 is the shipping choice.
+For reference, the Hugging Face fp32 run scores 62%. PyTorch dynamic int8 (activations quantized at run time) broke
+the model in every variant tried (all layers; per-channel weights with an fp32 output head): 36-38%, 46-48 of 50
+answers ran to the 300-token cap, 32-125 hallucinated ids.
+
+**Scorer fix found during this work.** llama.cpp first appeared to score 48% vs Hugging Face's 64%. Reading the
+answers showed the rule-based judge misread negations: "No, there is no evidence ... malicious" counted as calling
+the source malicious, and "No anomaly detected" counted as anomalous. The judge now honors a leading yes/no and
+negated mentions. Every run was rescored (`src/rescore_all.py`, `results/rescore_scorer_v1.json` vs `_v2.json`):
+all Bedrock scores are unchanged; Hugging Face fp32 64% -> 62% (one lucky pass removed); llama.cpp FP16/Q8 48% -> 60%.
 
 **Prompt engineering A/B (`src/prompt_ab.py`, `results/prompt_ab_metrics.json`).** Three system prompts on the same
 50 frozen contexts. A rule-heavy prompt with a one-shot example, revised on half the questions only, did not beat

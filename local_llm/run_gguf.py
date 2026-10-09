@@ -23,7 +23,9 @@ with open(out_path, "w") as f:
         user = "\n".join(pack["lines"][k] for k in ids)
         msgs = [{"role": "system", "content": pack["system"]}, {"role": "user", "content": user}]
         t = time.perf_counter()
-        r = llm.create_chat_completion(messages=msgs, temperature=0.0, top_k=1, max_tokens=300)
+        # true greedy, matching the Hugging Face runs: llama-cpp-python applies repeat_penalty=1.1 by default
+        r = llm.create_chat_completion(messages=msgs, temperature=0.0, top_k=1, top_p=1.0, min_p=0.0,
+                                       repeat_penalty=1.0, max_tokens=300)
         ms = (time.perf_counter() - t) * 1000
         u = r["usage"]
         f.write(json.dumps({"i": i, "answer": r["choices"][0]["message"]["content"],

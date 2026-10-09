@@ -1,50 +1,39 @@
 {
+  "host": "CodeBuild BUILD_GENERAL1_XLARGE (48 vCPU), one job for all three GGUF runs; greedy decoding (temperature 0, top_k 1, repeat_penalty 1.0)",
+  "scorer": "llm_eval.judge v2 (negation handling); every run rescored, Bedrock scores unchanged (results/rescore_scorer_v1.json vs _v2.json)",
+  "hf_fp32_accuracy": 0.62,
   "gguf_fp16": {
-    "accuracy": 0.48,
+    "accuracy": 0.6,
     "hallucinated_ids": 1,
-    "ids_cited": 77,
-    "latency_ms_p50": 9079.7,
-    "output_tokens_per_s": 8.09,
-    "answers_at_300_token_cap": 1,
-    "load_s": 45.7,
-    "file_mb": 3560.4
+    "file_mb": 3560.4,
+    "latency_ms_p50": 2928.15,
+    "output_tokens_per_s": 25.05
   },
   "gguf_q8_0": {
-    "accuracy": 0.48,
+    "accuracy": 0.6,
     "hallucinated_ids": 1,
-    "ids_cited": 82,
-    "latency_ms_p50": 7101.4,
-    "output_tokens_per_s": 11.2,
-    "answers_at_300_token_cap": 1,
-    "load_s": 6.3,
-    "file_mb": 1894.5
+    "file_mb": 1894.5,
+    "latency_ms_p50": 2159.45,
+    "output_tokens_per_s": 37.64,
+    "items_differing_from_fp16": 0
   },
   "gguf_q4_k_m": {
-    "accuracy": 0.5,
+    "accuracy": 0.54,
     "hallucinated_ids": 0,
-    "ids_cited": 81,
-    "latency_ms_p50": 6362.8,
-    "output_tokens_per_s": 11.38,
-    "answers_at_300_token_cap": 1,
-    "load_s": 4.7,
-    "file_mb": 1117.3
-  },
-  "torch_int8_perchannel": {
-    "accuracy": 0.36,
-    "hallucinated_ids": 32,
-    "ids_cited": 51,
-    "latency_ms_p50": 25790.1,
-    "output_tokens_per_s": 11.48,
-    "answers_at_300_token_cap": 46
+    "file_mb": 1117.3,
+    "latency_ms_p50": 1860.8000000000002,
+    "output_tokens_per_s": 35.26,
+    "items_differing_from_fp16": 3,
+    "losses": "item 88 anomalous block called normal; item 31 template id not cited; item 102 listed 1 of 3 hotspot hosts"
   },
   "torch_int8_all": {
     "accuracy": 0.38,
     "hallucinated_ids": 125,
-    "ids_cited": 149,
-    "latency_ms_p50": 21950.7,
-    "output_tokens_per_s": 13.59,
-    "answers_at_300_token_cap": 48
+    "note": "PyTorch dynamic int8 (activations quantized at run time); 46-48 of 50 answers hit the 300-token cap"
   },
-  "host": "CodeBuild BUILD_GENERAL1_LARGE, 8 vCPU Intel Xeon Platinum 8488C, same machine for all three GGUF runs; PyTorch int8 runs on the same CPU model, separate job",
-  "engines_note": "llama.cpp (llama-cpp-python 0.2.90, default chat-completion sampling with temperature 0) vs Hugging Face fp32 greedy (64%): compare quantization levels within an engine"
+  "torch_int8_perchannel": {
+    "accuracy": 0.36,
+    "hallucinated_ids": 32,
+    "note": "PyTorch dynamic int8 (activations quantized at run time); 46-48 of 50 answers hit the 300-token cap"
+  }
 }

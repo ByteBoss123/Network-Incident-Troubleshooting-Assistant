@@ -65,9 +65,10 @@ def judge(row, ans):
     v = verdict_line(ans)
     vl = v.lower()
     if t == "block":
-        neg = re.search(r"not anomal|is normal|likely normal|\bnormal\b|is healthy|yes, .* is healthy", vl) and \
-            not re.search(r"not healthy", vl)
-        pos = re.search(r"anomal|not healthy|failed (due|because)", vl) and not re.search(r"not anomal", vl)
+        no_anom = r"no anomal(y|ies) (was |were )?(detected|found)"
+        neg = (re.search(r"not anomal|is normal|likely normal|\bnormal\b|is healthy|yes, .* is healthy", vl)
+               or re.search(no_anom, vl)) and not re.search(r"not healthy", vl)
+        pos = re.search(r"anomal|not healthy|failed (due|because)", vl) and not re.search(r"not anomal|" + no_anom, vl)
         pred = 1 if pos and not neg else 0
         return pred == truth, pred
     if t == "host":
@@ -79,7 +80,12 @@ def judge(row, ans):
         high = re.search(r"risky|high|elevated|significant", vl)
         return bool(high and not low) == truth, None
     if t == "source":
-        benign = re.search(r"no need to worry|should not worry|not malicious|no alerts", vl)
+        # an explicit yes/no answer decides; otherwise negated mentions ("no evidence ... malicious") are benign
+        lead = re.match(r"^(\**verdict:?\**\s*)?(yes|no)\b", vl)
+        if lead:
+            return (lead.group(2) == "yes") == truth, None
+        benign = re.search(r"no need to worry|should not worry|not malicious|no alerts|no evidence|no indication|"
+                           r"not flagged|no (immediate |specific )?concern", vl)
         bad = re.search(r"malicious|flagged|worry", vl)
         return bool(bad and not benign) == truth, None
     if t in ("rack", "scanner"):

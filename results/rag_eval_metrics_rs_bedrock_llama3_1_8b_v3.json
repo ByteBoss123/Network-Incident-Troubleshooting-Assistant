@@ -1,23 +1,23 @@
 {
-  "backend": "local:Qwen/Qwen2.5-1.5B-Instruct",
+  "backend": "bedrock:us.meta.llama3-1-8b-instruct-v1:0",
   "n_items": 50,
   "n_expected": 50,
   "by_type": {
     "block": {
       "n": 16,
-      "accuracy": 0.625
+      "accuracy": 0.9375
     },
     "host": {
       "n": 3,
-      "accuracy": 0.3333
+      "accuracy": 0.6667
     },
     "host_one": {
       "n": 6,
-      "accuracy": 0.8333
+      "accuracy": 1.0
     },
     "missing": {
       "n": 2,
-      "accuracy": 0.0
+      "accuracy": 1.0
     },
     "rack": {
       "n": 2,
@@ -29,23 +29,23 @@
     },
     "signature": {
       "n": 3,
-      "accuracy": 1.0
+      "accuracy": 0.3333
     },
     "source": {
       "n": 12,
-      "accuracy": 0.5
+      "accuracy": 0.75
     },
     "template": {
       "n": 4,
-      "accuracy": 0.75
+      "accuracy": 0.0
     }
   },
-  "overall_accuracy": 0.62,
-  "block_precision": 0.5833,
-  "block_recall": 0.875,
+  "overall_accuracy": 0.76,
+  "block_precision": 0.8889,
+  "block_recall": 1.0,
   "content_filtered_answers": 0,
-  "ids_cited_total": 106,
+  "ids_cited_total": 204,
   "hallucinated_ids": 0,
   "answers_with_hallucinated_id": 0,
-  "latency_ms_p50": 16964.4
+  "latency_ms_p50": 2680.3
 }

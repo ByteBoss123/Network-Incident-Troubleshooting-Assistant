@@ -149,8 +149,16 @@ def test_netconfig_audit_sg_reference_only_rule_is_not_internet_exposed():
 def test_local_quantization_results_rescore():
     import llm_eval
     saved = json.loads((RES / "local_inference_optimization.json").read_text())
-    for tag in ("gguf_fp16", "gguf_q8_0", "gguf_q4_k_m"):
-        m = llm_eval.score(RES / "local_opt" / f"answers_{tag}.jsonl", tag=f"local_{tag}",
+    for q in ("fp16", "q8_0", "q4_k_m"):
+        m = llm_eval.score(RES / "local_opt_greedy" / f"answers_gguf_{q}.jsonl", tag=f"local_gguf_{q}",
                            prompts_path=RES / "llm_prompts_bedrock.jsonl")
-        assert m["overall_accuracy"] == saved[tag]["accuracy"]
-    assert saved["gguf_q4_k_m"]["file_mb"] < 0.35 * saved["gguf_fp16"]["file_mb"]
+        assert m["overall_accuracy"] == saved[f"gguf_{q}"]["accuracy"]
+    assert saved["gguf_q8_0"]["items_differing_from_fp16"] == 0
+
+
+def test_judge_handles_negated_answers():
+    import llm_eval
+    row = {"type": "source", "truth": False}
+    assert llm_eval.judge(row, "No, there is no evidence of traffic from 1.2.3.4 being malicious.")[0]
+    assert llm_eval.judge({"type": "source", "truth": True}, "Verdict: 1.2.3.4 is FLAGGED")[0]
+    assert llm_eval.judge({"type": "block", "truth": 0}, "Verdict: No anomaly detected.")[0]

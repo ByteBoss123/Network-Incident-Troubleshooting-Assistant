@@ -8,6 +8,52 @@ import time
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+class W8Linear(torch.nn.Module):
+    """nn.Linear with int8 weights and one fp32 scale per output channel; activations are not quantized."""
+
+    def __init__(self, lin):
+        super().__init__()
+        w = lin.weight.data.float()
+        scale = (w.abs().amax(dim=1) / 127.0).clamp(min=1e-8)
+        self.register_buffer("w", torch.round(w / scale[:, None]).clamp(-128, 127).to(torch.int8))
+        self.register_buffer("s", scale)
+        self.bias = lin.bias
+        self.fused = W8Linear.FUSED
+
+    def forward(self, x):
+        shp = x.shape
+        x2 = x.reshape(-1, shp[-1])
+        if self.fused:  # PyTorch's int8-weight CPU matmul kernel
+            y = torch._weight_int8pack_mm(x2, self.w, self.s.to(x2.dtype))
+        else:
+            y = x2 @ (self.w.to(x2.dtype) * self.s[:, None].to(x2.dtype)).t()
+        if self.bias is not None:
+            y = y + self.bias
+        return y.reshape(*shp[:-1], y.shape[-1])
+
+
+def _fused_ok():
+    try:
+        a, w, s = torch.randn(2, 64), torch.randint(-128, 127, (32, 64), dtype=torch.int8), torch.rand(32)
+        ref = a @ (w.float() * s[:, None]).t()
+        return torch.allclose(torch._weight_int8pack_mm(a, w, s), ref, atol=1e-3, rtol=1e-3)
+    except Exception:  # noqa: BLE001 - kernel missing on this torch build
+        return False
+
+
+W8Linear.FUSED = _fused_ok()
+
+
+def to_weight_only_int8(model):
+    for name, mod in list(model.named_modules()):
+        for cname, child in list(mod.named_children()):
+            full = f"{name}.{cname}" if name else cname
+            if isinstance(child, torch.nn.Linear) and full != "lm_head":
+                setattr(mod, cname, W8Linear(child))
+    print("W8_FUSED_KERNEL", W8Linear.FUSED, flush=True)
+    return model
+
+
 MODEL = os.environ.get("LOCAL_MODEL", "Qwen/Qwen2.5-1.5B-Instruct")
 pack = json.load(open(sys.argv[1]))
 out_path = sys.argv[2]
@@ -31,6 +77,8 @@ elif QUANT == "int8":  # per-channel weight scales (one per output row), lm_head
     targets = {n: per_channel_dynamic_qconfig for n, m in model.named_modules()
                if isinstance(m, torch.nn.Linear) and n != "lm_head"}
     model = torch.ao.quantization.quantize_dynamic(model, targets, dtype=torch.qint8, inplace=True)
+elif QUANT == "w8":  # weight-only int8: weights int8 with per-output-channel scales, activations stay fp32
+    model = to_weight_only_int8(model)
 torch.save(model.state_dict(), "/tmp/weights.pt")  # on-disk size counts int8 packed weights correctly
 weights_mb = os.path.getsize("/tmp/weights.pt") / 1e6
 load_s = time.time() - t0

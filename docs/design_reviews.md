@@ -58,7 +58,7 @@ Fixed with a deterministic tie-break; set-level exports were already identical.
 | Llama 3.1 8B, Bedrock | 94% | 0 of 158 | 2.9 s |
 | Amazon Nova Pro, Bedrock | 82% | 0 of 134 | 3.6 s (6 content-filter refusals) |
 | Amazon Nova Lite, Bedrock | 80% | 0 of 101 | 3.8 s (6 refusals) |
-| Qwen2.5-1.5B, local CPU | 64% | 0 of 106 | 17.0 s |
+| Qwen2.5-1.5B, local CPU | 62% | 0 of 106 | 17.0 s |
 
 **Prompt A/B** (`prompt_ab_metrics.json`, protocol in `src/prompt_ab.py`): a rule-heavy prompt with a one-shot
 example (v3) was revised on half A only. Nova Lite, held-out half B: 21/25 (original) vs 20/25 (v3).
@@ -86,14 +86,18 @@ and security metrics reproduced byte for byte; the RAG eval reproduced accuracy 
 
 ---
 
-## DR-5 Local inference: 4-bit GGUF in llama.cpp, not PyTorch dynamic int8
+## DR-5 Local inference: 8-bit GGUF in llama.cpp, not 4-bit and not PyTorch dynamic int8
 
 **Question.** How should the assistant run on a CPU-only host with no hosted API?
 
-**Evidence** (`results/local_inference_optimization.json`, same 50 prompts, same 8-vCPU machine for the GGUF runs):
-llama.cpp Q4_K_M 50% accuracy, 1,117 MB, 6.4 s median vs FP16 48%, 3,560 MB, 9.1 s. PyTorch dynamic int8
-(all layers; per-channel with an fp32 head) produced degenerate output: 36-38% accuracy, 46-48 of 50 answers at the
-300-token cap, 32-125 hallucinated ids.
+**Evidence** (`results/local_inference_optimization.json`, same 50 prompts, greedy, one 48-vCPU job):
+Q8_0 60% with the same verdict as FP16 on all 50 items, 1,895 MB vs 3,560 MB, 2.16 s vs 2.93 s median, 37.6 vs
+25.1 tokens/s. Q4_K_M 54%, 1.86 s: it lost 3 items, including an anomalous block called normal. PyTorch dynamic int8
+(all layers; per-channel with an fp32 head) produced degenerate output: 36-38%, 46-48 of 50 answers at the
+300-token cap.
 
-**Decision.** Ship Q4_K_M through llama.cpp for local deployments. Treat any new quantization as a model change:
-rerun the 50-question set and the hallucinated-id check before using it.
+**Decision.** Ship Q8_0 through llama.cpp. Treat any new quantization as a model change: rerun the 50-question set,
+compare per-item verdicts with the full-precision run, and run the hallucinated-id check.
+
+**Also found.** The rule-based judge misread negated answers ("no evidence ... malicious"); fixed and every run
+rescored. Bedrock scores did not change.
