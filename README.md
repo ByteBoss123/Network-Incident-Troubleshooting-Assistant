@@ -84,6 +84,16 @@ the original on the held-out half (Nova Lite 20/25 vs 21/25) and cut Llama 3.1 8
 from 94% to 76%, copying the example id into 4 answers. The original grounded prompt stays. Llama 3.1 8B with the
 original prompt scored 94% (0 hallucinated ids of 158), 2 points below Llama 3.3 70B.
 
+**Network configuration audit (`src/netconfig_audit.py`, `results/netconfig_audit.json`).** A read-only snapshot
+of a real AWS account's network configuration (17 regions, 17 VPCs, 21 security groups, 7 interfaces, load-balancer
+listeners; `data/netconfig/`) is checked against the ports external sources probed and alerted on in the Suricata
+data. One rule is open to the internet (TCP 80 on an internet-facing load balancer with an HTTP-only listener); port
+80 is the third most-alerted port in the IDS data (18 alerted flows from 47 sources), so it is reported as medium.
+None of the other top-10 alerted ports (1433, 22, 2375, 3389, 8080, 6379, 4573, 8545, 445) is exposed. Also flagged:
+2 task interfaces with public IPs their security groups never admit internet traffic to, and 2 unattached security
+groups. Runs as the `netconfig_audit` task in the Airflow DAG (9 of 9 tasks succeeded). The IDS data comes from a
+different network, so it is a prior on what attackers probe, not traffic seen by this account.
+
 **Design reviews:** `docs/design_reviews.md` (detector, graph store, generator and prompt, orchestration).
 
 ## Limitations, disclosed

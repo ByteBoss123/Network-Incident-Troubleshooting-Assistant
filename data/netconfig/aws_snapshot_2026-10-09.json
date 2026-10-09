@@ -1,0 +1,654 @@
+{
+ "captured": "2026-10-09",
+ "account_scope": "read-only Describe* calls, all 17 enabled regions",
+ "regions": [
+  {
+   "region": "ap-south-1",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@ap-south-1",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "eu-north-1",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@eu-north-1",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "eu-west-3",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@eu-west-3",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "eu-west-2",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@eu-west-2",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "eu-west-1",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@eu-west-1",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "ap-northeast-3",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@ap-northeast-3",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "ap-northeast-2",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@ap-northeast-2",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "ap-northeast-1",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@ap-northeast-1",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "ca-central-1",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@ca-central-1",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "sa-east-1",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@sa-east-1",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "ap-southeast-1",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@ap-southeast-1",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "ap-southeast-2",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@ap-southeast-2",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "eu-central-1",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@eu-central-1",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "us-east-1",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "sg-0ff89a84551dbbe09",
+     "name": "callassist-ai-api-sg",
+     "rules": [
+      {
+       "proto": "tcp",
+       "from": 8000,
+       "to": 8000,
+       "cidrs": [],
+       "sg_refs": [
+        "sg-08169223d9962a371"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    },
+    {
+     "id": "sg-0904c4c279921e20d",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    },
+    {
+     "id": "sg-0060ac961941a4a59",
+     "name": "ElasticMapReduce-slave",
+     "rules": [
+      {
+       "proto": "tcp",
+       "from": 0,
+       "to": 65535,
+       "cidrs": [],
+       "sg_refs": [
+        "sg-0060ac961941a4a59",
+        "sg-0afefa985a8404b43"
+       ],
+       "prefix_lists": []
+      },
+      {
+       "proto": "udp",
+       "from": 0,
+       "to": 65535,
+       "cidrs": [],
+       "sg_refs": [
+        "sg-0060ac961941a4a59",
+        "sg-0afefa985a8404b43"
+       ],
+       "prefix_lists": []
+      },
+      {
+       "proto": "icmp",
+       "from": -1,
+       "to": -1,
+       "cidrs": [],
+       "sg_refs": [
+        "sg-0afefa985a8404b43",
+        "sg-0060ac961941a4a59"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    },
+    {
+     "id": "sg-08169223d9962a371",
+     "name": "callassist-ai-alb-sg",
+     "rules": [
+      {
+       "proto": "tcp",
+       "from": 80,
+       "to": 80,
+       "cidrs": [
+        "0.0.0.0/0"
+       ],
+       "sg_refs": [],
+       "prefix_lists": []
+      }
+     ]
+    },
+    {
+     "id": "sg-0afefa985a8404b43",
+     "name": "ElasticMapReduce-master",
+     "rules": [
+      {
+       "proto": "tcp",
+       "from": 0,
+       "to": 65535,
+       "cidrs": [],
+       "sg_refs": [
+        "sg-0060ac961941a4a59",
+        "sg-0afefa985a8404b43"
+       ],
+       "prefix_lists": []
+      },
+      {
+       "proto": "tcp",
+       "from": 8443,
+       "to": 8443,
+       "cidrs": [],
+       "sg_refs": [],
+       "prefix_lists": [
+        "pl-f8bd5e91"
+       ]
+      },
+      {
+       "proto": "udp",
+       "from": 0,
+       "to": 65535,
+       "cidrs": [],
+       "sg_refs": [
+        "sg-0afefa985a8404b43",
+        "sg-0060ac961941a4a59"
+       ],
+       "prefix_lists": []
+      },
+      {
+       "proto": "icmp",
+       "from": -1,
+       "to": -1,
+       "cidrs": [],
+       "sg_refs": [
+        "sg-0afefa985a8404b43",
+        "sg-0060ac961941a4a59"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": [
+    {
+     "id": "eni-0a42ee0ce6092830d",
+     "type": "vpc_endpoint",
+     "public_ip": false,
+     "sgs": [
+      "sg-0904c4c279921e20d"
+     ]
+    },
+    {
+     "id": "eni-06c5deb364ce4154e",
+     "type": "vpc_endpoint",
+     "public_ip": false,
+     "sgs": [
+      "sg-0904c4c279921e20d"
+     ]
+    },
+    {
+     "id": "eni-06d360bb285c52fc9",
+     "type": "ecs_task",
+     "public_ip": true,
+     "sgs": [
+      "sg-0ff89a84551dbbe09"
+     ]
+    },
+    {
+     "id": "eni-08ff0d987911648e4",
+     "type": "alb",
+     "public_ip": true,
+     "sgs": [
+      "sg-08169223d9962a371"
+     ]
+    },
+    {
+     "id": "eni-0ed6d7e3e640c0c03",
+     "type": "vpc_endpoint",
+     "public_ip": false,
+     "sgs": [
+      "sg-0904c4c279921e20d"
+     ]
+    },
+    {
+     "id": "eni-058aa7142e18defd6",
+     "type": "alb",
+     "public_ip": true,
+     "sgs": [
+      "sg-08169223d9962a371"
+     ]
+    },
+    {
+     "id": "eni-0417aefd9d4098a5d",
+     "type": "ecs_task",
+     "public_ip": true,
+     "sgs": [
+      "sg-0ff89a84551dbbe09"
+     ]
+    }
+   ],
+   "load_balancers": [
+    {
+     "name": "callassist-ai-alb",
+     "scheme": "internet-facing",
+     "listeners": [
+      {
+       "protocol": "HTTP",
+       "port": 80
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "region": "us-east-2",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@us-east-2",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "us-west-1",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@us-west-1",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  },
+  {
+   "region": "us-west-2",
+   "vpcs": [
+    {
+     "default": true
+    }
+   ],
+   "security_groups": [
+    {
+     "id": "default@us-west-2",
+     "name": "default",
+     "rules": [
+      {
+       "proto": "-1",
+       "from": null,
+       "to": null,
+       "cidrs": [],
+       "sg_refs": [
+        "self"
+       ],
+       "prefix_lists": []
+      }
+     ]
+    }
+   ],
+   "enis": []
+  }
+ ]
+}

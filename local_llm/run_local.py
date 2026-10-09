@@ -18,6 +18,12 @@ tok = AutoTokenizer.from_pretrained(MODEL)
 model = AutoModelForCausalLM.from_pretrained(MODEL, torch_dtype=torch.float32,
                                              attn_implementation=os.environ.get("ATTN_IMPL", "eager"))
 model.eval()
+# Model optimization: dynamic int8 quantization of every nn.Linear (weights int8, activations quantized on the fly)
+QUANT = os.environ.get("QUANT", "fp32")
+if QUANT == "int8":
+    model = torch.ao.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
+torch.save(model.state_dict(), "/tmp/weights.pt")  # on-disk size counts int8 packed weights correctly
+weights_mb = os.path.getsize("/tmp/weights.pt") / 1e6
 load_s = time.time() - t0
 with open(out_path, "w") as f:
     for i, ids in pack["items"]:
@@ -34,8 +40,8 @@ with open(out_path, "w") as f:
         ms = (time.perf_counter() - t) * 1000
         new = gen[0, n_in:]
         ans = tok.decode(new, skip_special_tokens=True)
-        f.write(json.dumps({"i": i, "answer": ans, "model": f"local:{MODEL}", "latency_ms": round(ms, 1),
+        f.write(json.dumps({"i": i, "answer": ans, "model": f"local:{MODEL}:{QUANT}", "latency_ms": round(ms, 1),
                             "prompt_tokens": int(n_in), "output_tokens": int(new.shape[0])}) + "\n")
         f.flush()
         print(i, round(ms), int(n_in), int(new.shape[0]), flush=True)
-print("MODEL_LOAD_S", round(load_s, 1), "CPUS", os.cpu_count())
+print("MODEL_LOAD_S", round(load_s, 1), "CPUS", os.cpu_count(), "QUANT", QUANT, "WEIGHTS_MB", round(weights_mb, 1))

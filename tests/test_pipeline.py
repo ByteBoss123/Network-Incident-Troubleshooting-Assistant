@@ -114,3 +114,33 @@ def test_bedrock_llm_answers_rescore_reproducibly():
         again = llm_eval.score(RES / path, tag=tag, prompts_path=RES / "llm_prompts_bedrock.jsonl")
         assert again["overall_accuracy"] == saved["overall_accuracy"]
         assert again["hallucinated_ids"] == 0
+
+
+def _snap(rules, enis, lbs=()):
+    return {"regions": [{"region": "r1", "vpcs": [{"default": True}],
+                         "security_groups": [{"id": "sg-a", "name": "web", "rules": rules},
+                                             {"id": "sg-old", "name": "stale", "rules": []}],
+                         "enis": enis, "load_balancers": list(lbs)}]}
+
+
+def test_netconfig_audit_flags_exposed_probed_port_and_plaintext_lb():
+    import netconfig_audit as na
+    rules = [{"proto": "tcp", "from": 22, "to": 22, "cidrs": ["0.0.0.0/0"], "sg_refs": [], "prefix_lists": []}]
+    enis = [{"id": "e1", "type": "interface", "public_ip": True, "sgs": ["sg-a"]},
+            {"id": "e2", "type": "ecs_task", "public_ip": True, "sgs": ["sg-internal"]}]
+    lbs = [{"name": "lb", "scheme": "internet-facing", "listeners": [{"protocol": "HTTP", "port": 80}]}]
+    out = na.audit(_snap(rules, enis, lbs), {22: {"flows": 5, "alerted": 3, "sources": 2},
+                                             3389: {"flows": 4, "alerted": 2, "sources": 2}})
+    checks = [f["check"] for f in out["findings"]]
+    assert "probed_port_exposed" in checks and "plaintext_listener" in checks
+    assert [f["eni"] for f in out["findings"] if f["check"] == "unneeded_public_ip"] == ["e2"]
+    assert any(f["check"] == "unattached_sg" and "sg-old" in f["sg"] for f in out["findings"])
+    assert out["summary"]["top10_alerted_ports_exposed"] == [22]
+
+
+def test_netconfig_audit_sg_reference_only_rule_is_not_internet_exposed():
+    import netconfig_audit as na
+    rules = [{"proto": "tcp", "from": 8000, "to": 8000, "cidrs": [], "sg_refs": ["sg-lb"], "prefix_lists": []}]
+    out = na.audit(_snap(rules, [{"id": "e1", "type": "interface", "public_ip": False, "sgs": ["sg-a"]}]),
+                   {8000: {"flows": 1, "alerted": 1, "sources": 1}})
+    assert out["summary"]["internet_exposed_rules"] == 0

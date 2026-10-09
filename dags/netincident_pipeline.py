@@ -2,6 +2,7 @@
 
     etl -> quality_gate -> detect -> graph -> graph_feature -> deeplog_lstm -> evaluate
                         \\-> security --------------------------------------/
+                                    \\-> netconfig_audit
 
 Each task runs one project script with the project's own interpreter (PROJECT_PYTHON), so the
 Airflow environment only needs Airflow. `quality_gate` fails the run before any modeling if the
@@ -59,7 +60,9 @@ with DAG(
     security = step("security", f"{PY} src/security.py > /dev/null")
     lstm = step("deeplog_lstm", f"{PY} src/deeplog_tf.py > /dev/null 2>&1")
     evaluate = step("evaluate", f"cd src && {PY} evaluate.py > /dev/null")
+    # network configuration check: cloud security-group exposure vs ports attackers probe in the IDS data
+    netconfig = step("netconfig_audit", f"{PY} src/netconfig_audit.py > /dev/null")
 
     etl >> gate >> [detect, security]
     detect >> graph >> graph_feature >> lstm >> evaluate
-    security >> evaluate
+    security >> [evaluate, netconfig]

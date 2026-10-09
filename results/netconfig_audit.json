@@ -1,0 +1,84 @@
+{
+  "summary": {
+    "regions": 17,
+    "vpcs": 17,
+    "security_groups": 21,
+    "interfaces": 7,
+    "internet_exposed_rules": 1,
+    "top10_alerted_ports": [
+      1433,
+      22,
+      80,
+      2375,
+      3389,
+      8080,
+      6379,
+      4573,
+      8545,
+      445
+    ],
+    "top10_alerted_ports_exposed": [
+      80
+    ],
+    "findings_by_severity": {
+      "medium": 2,
+      "low": 4,
+      "info": 1
+    }
+  },
+  "findings": [
+    {
+      "check": "internet_exposed_rule",
+      "severity": "info",
+      "region": "us-east-1",
+      "sg": "callassist-ai-alb-sg (sg-08169223d9962a371)",
+      "ports": "tcp 80-80",
+      "attached": true
+    },
+    {
+      "check": "probed_port_exposed",
+      "severity": "medium",
+      "region": "us-east-1",
+      "sg": "callassist-ai-alb-sg (sg-08169223d9962a371)",
+      "port": 80,
+      "flows": 362,
+      "alerted": 18,
+      "sources": 47
+    },
+    {
+      "check": "plaintext_listener",
+      "severity": "medium",
+      "region": "us-east-1",
+      "load_balancer": "callassist-ai-alb",
+      "listeners": [
+        "HTTP"
+      ]
+    },
+    {
+      "check": "unneeded_public_ip",
+      "severity": "low",
+      "region": "us-east-1",
+      "eni": "eni-06d360bb285c52fc9",
+      "type": "ecs_task"
+    },
+    {
+      "check": "unneeded_public_ip",
+      "severity": "low",
+      "region": "us-east-1",
+      "eni": "eni-0417aefd9d4098a5d",
+      "type": "ecs_task"
+    },
+    {
+      "check": "unattached_sg",
+      "severity": "low",
+      "region": "us-east-1",
+      "sg": "ElasticMapReduce-slave (sg-0060ac961941a4a59)"
+    },
+    {
+      "check": "unattached_sg",
+      "severity": "low",
+      "region": "us-east-1",
+      "sg": "ElasticMapReduce-master (sg-0afefa985a8404b43)"
+    }
+  ]
+}
